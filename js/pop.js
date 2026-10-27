@@ -1,5 +1,5 @@
 // Phase 3: 터뜨리기 (같은 색 블록을 그어서 잇고, 놓으면 터짐)
-import { createFx } from './fx.js';
+import { createFx, GOLD, NAVY, STARLIGHT } from './fx.js';
 
 const MAX_CHAIN = 5;
 const LONG_PRESS_MS = 500;
@@ -196,28 +196,30 @@ export function initPop(app) {
         ], { duration: 190, easing: 'ease-in', fill: 'forwards' });
         setTimeout(() => {
           fx.burst(b.cx, b.cy, color, n);
-          if (tier !== 'base') fx.sparkle(b.cx, b.cy, tier === 'B' ? 10 : 5);
-          if (b.block.stage === 2) fx.ring(b.cx, b.cy, fx.GOLD, 46, 4, 26);
+          if (tier !== 'base') fx.sparkle(b.cx, b.cy, tier === 'B' ? 8 : 5, { glow: 8 });
+          if (b.block.stage === 2) fx.ring(b.cx, b.cy, GOLD, 44, 3.5, 26);
         }, 120);
       }, i * GAP_MS);
     });
 
     const allPopped = (n - 1) * GAP_MS + 200;
     setTimeout(() => {
-      shake(tier === 'B' ? 10 : 2 + n * 1.4, tier === 'B' ? 520 : 320);
+      shake(tier === 'B' ? 6 : 2 + n * 1.2, tier === 'B' ? 480 : 320);
       const cx = chain.reduce((s, b) => s + b.cx, 0) / n;
       const cy = chain.reduce((s, b) => s + b.cy, 0) / n;
       if (tier === 'A') {
-        fx.ring(cx, cy, fx.GOLD, 140 + n * 20, 7, 40);
-        fx.sparkle(cx, cy, 18 + n * 4, 1.6);
+        fx.ring(cx, cy, GOLD, 130 + n * 18, 5, 42);
+        fx.sparkle(cx, cy, 16 + n * 4, { spread: 1.5, glow: 8 });
       }
       if (tier === 'B') {
-        flash();
-        fx.ring(cx, cy, fx.GOLD, Math.max(window.innerWidth, window.innerHeight) * 0.7, 10, 55);
-        fx.ring(cx, cy, '#ffffff', 220, 6, 40);
-        fx.sparkle(cx, cy, 40, 2.4);
-        fx.confetti([...SLOTS, fx.GOLD], 90);
-        banner('완성!');
+        // 밤하늘: 남색 안개가 퍼지고, 그 속에서 남색·금색 별이 반짝임
+        const far = Math.max(window.innerWidth, window.innerHeight);
+        fx.mist(cx, cy, 7, far * 0.45);
+        fx.ring(cx, cy, GOLD, far * 0.55, 5, 60, 0.6);
+        fx.ring(cx, cy, STARLIGHT, 170, 4, 44, 0.7);
+        fx.sparkle(cx, cy, 34, { spread: 2.2, glow: 9, life: [60, 100] });
+        fx.sparkle(cx, cy, 46, { color: NAVY, spread: 2.6, glow: 0, size: [2.5, 5.5], life: [80, 130], drag: 0.975, alpha: 0.75, delay: 20 });
+        fx.sparkle(cx, cy, 14, { color: STARLIGHT, spread: 2, glow: 6, life: [70, 110], delay: 30 });
       }
     }, allPopped);
 
@@ -244,22 +246,6 @@ export function initPop(app) {
       frames.push({ transform: i === 8 ? 'none' : `translate(${(Math.random() * 2 - 1) * k}px, ${(Math.random() * 2 - 1) * k}px)` });
     }
     $('timeline').animate(frames, { duration, easing: 'linear' });
-  }
-
-  function flash() {
-    $('flash').animate([{ opacity: 0.75 }, { opacity: 0 }], { duration: 600, easing: 'ease-out' });
-  }
-
-  function banner(text) {
-    const el = $('banner');
-    el.textContent = text;
-    el.animate([
-      { transform: 'translate(-50%, -50%) scale(0.3)', opacity: 0 },
-      { transform: 'translate(-50%, -50%) scale(1.15)', opacity: 1, offset: 0.25 },
-      { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 0.4 },
-      { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 0.8 },
-      { transform: 'translate(-50%, -60%) scale(1)', opacity: 0 },
-    ], { duration: 1500, easing: 'ease-out' });
   }
 
   // ---------- 터뜨리기 끄기 ----------

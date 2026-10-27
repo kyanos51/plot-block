@@ -98,10 +98,9 @@ body.stage-test .grid .block[data-stage="2"]::after { content: "★"; color: #C9
 body.stage-test .stage-test-btn { background: var(--ink); color: var(--bg); }
 
 /* ---------- 터뜨리기 연출 ---------- */
-.link-svg, .fx, .flash { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.link-svg, .fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .link-svg { z-index: 24; overflow: visible; }
 .fx { z-index: 26; }
-.flash { z-index: 27; background: #fff; opacity: 0; }
 .chain-count {
   position: fixed; left: 0; top: 0; z-index: 28; pointer-events: none;
   min-width: 30px; padding: 4px 9px; border-radius: 99px;
@@ -109,12 +108,7 @@ body.stage-test .stage-test-btn { background: var(--ink); color: var(--bg); }
   opacity: 0; transition: opacity 0.12s;
 }
 .chain-count.show { opacity: 1; }
-.banner {
-  position: fixed; left: 50%; top: 42%; z-index: 29; pointer-events: none;
-  font-size: 44px; font-weight: 900; letter-spacing: 2px; color: #C9962E;
-  text-shadow: 0 2px 0 #fff, 0 6px 20px rgba(201, 150, 46, 0.45);
-  transform: translate(-50%, -50%); opacity: 0;
-}
+
 body.edge .block { box-shadow: inset 0 0 0 1px rgba(60, 45, 30, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.08); }
 .block.hidden { opacity: 0; }
 
