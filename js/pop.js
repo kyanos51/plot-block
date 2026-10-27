@@ -50,7 +50,8 @@ export function initPop(app) {
     ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px;--ring:${shade(color(g.slot), -0.15)}`;
     document.body.appendChild(ring);
     const dur = LONG_PRESS_MS - CHARGE_DELAY;
-    ring.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, easing: 'ease-in', fill: 'forwards' });
+    // 가장 진할 때도 불투명도 50%까지만 (파스텔 화면에서 쨍하지 않게)
+    ring.animate([{ opacity: 0 }, { opacity: 0.5 }], { duration: dur, easing: 'ease-out', fill: 'forwards' });
     g.ring = ring;
     g.press = el.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.92)' }], { duration: dur, easing: 'ease-out', fill: 'forwards' });
   }
