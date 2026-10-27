@@ -60,6 +60,8 @@ button { font: inherit; color: inherit; touch-action: manipulation; }
 }
 body.editing .add-sheet { display: block; }
 
+.version { margin: 18px 0 0; text-align: center; font-size: 10px; color: var(--sub); }
+
 /* ---------- 블록 ---------- */
 .block {
   position: absolute;

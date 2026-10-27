@@ -1,6 +1,6 @@
 // 오프라인 실행용 서비스워커.
 // 네트워크 우선, 실패하면 캐시 사용 (개발 중 업데이트가 바로 반영되도록).
-const CACHE = 'plot-block-v3';
+const CACHE = 'plot-block-v4';
 const SHELL = [
   './',
   './index.html',
@@ -28,8 +28,11 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
+  // 'no-cache': GitHub Pages의 브라우저 캐시(약 10분)를 건너뛰고 항상 최신 파일 확인
+  const url = new URL(e.request.url);
+  const fresh = url.origin === location.origin ? fetch(url.href, { cache: 'no-cache' }) : fetch(e.request);
   e.respondWith(
-    fetch(e.request)
+    fresh
       .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy));

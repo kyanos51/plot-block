@@ -1,6 +1,9 @@
 // Phase 2 프로토타입: 블록 쌓기 조작감 검증 (데이터 저장 없음)
 const $ = (id) => document.getElementById(id);
 
+// 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
+const VERSION = 'r4';
+
 // ---------- 상태 ----------
 const SLOTS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
 const COLS = 5;
@@ -106,7 +109,8 @@ function render() {
           return `<div class="block" data-id="${b.id}" style="--c:${SLOTS[b.slot]};left:${x}px;top:${y}px">${b.title}</div>`;
         }).join('')}
       </div>
-    </section>`).join('') + '<button class="add-sheet" id="add-sheet">+ 시트 추가</button>';
+    </section>`).join('') + `<button class="add-sheet" id="add-sheet">+ 시트 추가</button>
+    <p class="version">프로토타입 ${VERSION}</p>`;
 
   $('add-sheet').addEventListener('click', addSheet);
 }
