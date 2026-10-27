@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>시트 목업</title>
+  <style>
+    :root {
+      --bg: #F4F1EA;
+      --ink: #3B3833;
+      --sub: #8A847A;
+      --line: #E3DDD1;
+      --panel: rgba(255, 255, 255, 0.6);
+      --cell: 52px;
+      --gap: 6px;
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+    }
+    button { font: inherit; color: inherit; touch-action: manipulation; }
+
+    /* ---------- 목업 설정 패널 ---------- */
+    .config { padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; border-bottom: 1px dashed var(--line); }
+    .config h1 { font-size: 15px; margin: 0 0 4px; }
+    .config .hint { font-size: 11px; color: var(--sub); margin: 0 0 6px; line-height: 1.5; }
+    .opt { margin-top: 8px; }
+    .opt-label { font-size: 11px; color: var(--sub); margin-bottom: 4px; }
+    .seg { display: flex; gap: 4px; }
+    .seg button {
+      flex: 1; padding: 7px 2px; border: 1.5px solid transparent; border-radius: 8px;
+      background: var(--panel); font-size: 12px;
+    }
+    .seg button.on { border-color: var(--ink); font-weight: 700; }
+
+    /* ---------- 앱 상단 바 (모형) ---------- */
+    .appbar {
+      position: sticky; top: 0; z-index: 10;
+      display: flex; align-items: center; gap: 6px;
+      padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+      background: var(--bg);
+    }
+    .search {
+      flex: 1; min-width: 0; height: 34px; border-radius: 10px; border: 0;
+      background: rgba(0, 0, 0, 0.045); padding: 0 10px; font-size: 16px; color: var(--ink);
+    }
+    .icon-btn {
+      flex: none; height: 34px; padding: 0 10px; border: 0; border-radius: 10px;
+      background: rgba(0, 0, 0, 0.045); font-size: 12px; font-weight: 600;
+    }
+    .icon-btn.on { background: var(--ink); color: var(--bg); }
+
+    /* ---------- 타임라인 ---------- */
+    .timeline { padding: 4px 16px 160px; }
+    .sheet { position: relative; }
+    .grid { position: relative; margin: 0 auto; }
+    .block {
+      position: absolute; width: var(--cell); height: var(--cell);
+      border-radius: calc(var(--cell) * 0.17);
+      background: var(--c);
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+      display: flex; align-items: center; justify-content: center;
+      padding: 3px; text-align: center; word-break: keep-all;
+      font-size: var(--fs); line-height: 1.2; font-weight: 600; color: rgba(40, 36, 30, 0.85);
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+    }
+    body.edge .block { box-shadow: inset 0 0 0 1px rgba(60, 45, 30, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.08); }
+    .note { position: absolute; font-size: var(--fs); line-height: 1.3; padding: 3px 2px; color: var(--ink); }
+
+    /* 화수 라벨 */
+    .label { font-size: 12px; font-weight: 700; color: var(--sub); }
+    .lbl-top .label { margin: 0 0 6px 2px; }
+    .lbl-pill .label {
+      display: inline-block; margin: 0 0 6px; padding: 3px 9px; border-radius: 99px;
+      background: rgba(0, 0, 0, 0.055); color: var(--ink); font-size: 11px;
+    }
+    .lbl-rail .sheet { display: flex; align-items: center; }
+    .lbl-rail .label {
+      flex: none; width: 34px; text-align: center; line-height: 1.15; font-size: 11px;
+    }
+    .lbl-rail .grid { margin: 0; }
+
+    /* 시트 구분 */
+    .sep-space .sheet { margin-bottom: 26px; }
+    .sep-line .sheet { padding: 12px 0; border-bottom: 1px solid var(--line); }
+    .sep-band .sheet { padding: 12px 16px; margin: 0 -16px; }
+    .sep-band .sheet:nth-child(odd) { background: rgba(120, 100, 70, 0.045); }
+    .sep-card .sheet { padding: 12px; margin-bottom: 10px; border-radius: 16px; background: rgba(255, 255, 255, 0.55); }
+
+    /* ---------- 트레이 ---------- */
+    .tray {
+      position: fixed; z-index: 20; left: 50%;
+      display: flex; align-items: center; gap: 10px;
+      transform: translate(-50%, 140%); transition: transform 0.28s cubic-bezier(.34, 1.4, .64, 1);
+    }
+    body.editing .tray, body.desktop .tray { transform: translate(-50%, 0); }
+    .tray .block { position: static; width: calc(var(--cell) * 0.8); height: calc(var(--cell) * 0.8); flex: none; }
+    .tray .add {
+      flex: none; width: calc(var(--cell) * 0.8); height: calc(var(--cell) * 0.8); border-radius: 10px;
+      border: 1.5px dashed rgba(60, 50, 30, 0.3); background: transparent; font-size: 20px; color: var(--sub);
+    }
+    .tray .trash { font-size: 10px; color: var(--sub); line-height: 1.3; text-align: center; width: 40px; }
+    .tray-bar .tray {
+      bottom: 0; width: 100%; justify-content: center;
+      padding: 10px 16px calc(env(safe-area-inset-bottom) + 10px);
+      background: rgba(250, 248, 243, 0.96); box-shadow: 0 -1px 0 var(--line), 0 -6px 16px rgba(60, 50, 30, 0.06);
+    }
+    .tray-float .tray {
+      bottom: calc(env(safe-area-inset-bottom) + 14px);
+      padding: 10px 14px; border-radius: 22px;
+      background: rgba(255, 253, 248, 0.97); box-shadow: 0 8px 24px rgba(60, 50, 30, 0.16);
+    }
+
+    /* ---------- 데스크탑 (가로 진행) ---------- */
+    body.desktop .timeline {
+      display: flex; align-items: flex-start; overflow-x: auto; padding: 12px 24px 160px;
+    }
+    body.desktop .sheet { flex: none; margin-bottom: 0; }
+    body.desktop.sep-space .sheet { margin-right: 30px; }
+    body.desktop.sep-line .sheet { padding: 0 14px; border-bottom: 0; border-right: 1px solid var(--line); }
+    body.desktop.sep-band .sheet { margin: 0; padding: 12px 14px; }
+    body.desktop.sep-card .sheet { margin: 0 10px 0 0; }
+    body.desktop.lbl-rail .sheet { display: block; }
+    body.desktop.lbl-rail .label { width: auto; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <section class="config">
+    <h1>시트 목업 <small style="font-weight:400;color:var(--sub);font-size:11px">Phase 1 · 세션 5</small></h1>
+    <p class="hint">옵션을 바꿔 가며 비교해 주세요. 아래는 실제 앱 화면 모형입니다. 상단 '편집' 버튼을 누르면 트레이가 나타납니다.</p>
+    <div id="opts"></div>
+  </section>
+
+  <header class="appbar">
+    <input class="search" placeholder="화수 검색" inputmode="numeric">
+    <button class="icon-btn" id="btn-edit">편집</button>
+    <button class="icon-btn">글</button>
+    <button class="icon-btn">터뜨리기</button>
+  </header>
+
+  <main class="timeline" id="timeline"></main>
+
+  <div class="tray" id="tray"></div>
+
+  <section class="config" style="border-top:1px dashed var(--line);border-bottom:0;margin-bottom:140px">
+    <textarea id="memo" placeholder="느낀 점" style="width:100%;min-height:60px;border:0;border-radius:10px;padding:10px;font:inherit;font-size:16px;background:#fff;color:var(--ink)"></textarea>
+    <button id="copy" style="width:100%;margin-top:8px;padding:12px;border:0;border-radius:10px;background:var(--ink);color:var(--bg);font-weight:700">결과 복사</button>
+    <p class="hint" id="msg"></p>
+  </section>
+
+  <script>
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const COLORS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
+
+    const OPTIONS = {
+      size: { label: '블록 크기', items: { s: '작게 44', m: '중간 52', l: '크게 60' } },
+      sep: { label: '시트 구분', items: { space: '여백만', line: '구분선', band: '배경 띠', card: '카드' } },
+      lbl: { label: '화수 라벨', items: { top: '위 글자', pill: '위 배지', rail: '왼쪽 세로' } },
+      tray: { label: '트레이', items: { bar: '하단 바', float: '떠 있는 형' } },
+      edge: { label: '블록 외곽선', items: { off: '끔', on: '켬' } },
+    };
+    const SIZES = { s: 44, m: 52, l: 60 };
+    const state = { size: 'm', sep: 'space', lbl: 'top', tray: 'bar', edge: 'off' };
+
+    // 예시 플롯: blocks [슬롯, 열, 행, 글자], notes [열, 행, 글자]
+    const SHEETS = [
+      { from: 1, to: 17, blocks: [[0, 0, 1, '첫 만남'], [2, 2, 1, '복선'], [3, 4, 0, '']], notes: [[1, 2, '주인공 등장, 세계관 소개']] },
+      { from: 18, blocks: [[1, 1, 1, '배신'], [0, 3, 1, '재회'], [2, 3, 2, '']], notes: [[0, 0, '분위기 반전']] },
+      { from: 19, to: 30, blocks: [[3, 0, 1, '수련'], [1, 2, 0, ''], [0, 4, 1, '고백'], [2, 2, 2, '회수']], notes: [] },
+      { from: 31, to: 35, blocks: [[2, 1, 1, '진실'], [3, 2, 1, '각성']], notes: [[3, 1, '1부 클라이맥스']] },
+      { from: 36, to: 50, blocks: [[0, 0, 1, '이별'], [1, 4, 2, '']], notes: [[1, 0, '2부 시작']] },
+      { from: 51, blocks: [[2, 2, 1, '결말'], [0, 1, 1, ''], [3, 3, 1, '']], notes: [] },
+    ];
+
+    const isDesktop = () => window.matchMedia('(min-width: 900px)').matches;
+
+    function renderOpts() {
+      $('opts').innerHTML = Object.entries(OPTIONS).map(([k, o]) => `
+        <div class="opt">
+          <div class="opt-label">${o.label}</div>
+          <div class="seg" data-k="${k}">
+            ${Object.entries(o.items).map(([v, t]) =>
+              `<button data-v="${v}" class="${state[k] === v ? 'on' : ''}">${t}</button>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+
+    function cellSize() {
+      // 모바일에서 가로 넘침이 없도록 화면 폭에 맞춰 줄임
+      const want = SIZES[state.size];
+      if (isDesktop()) return want;
+      const gapRatio = 0.12;
+      const rail = state.lbl === 'rail' ? 34 : 0;
+      const pad = state.sep === 'card' ? 24 : state.sep === 'band' ? 0 : 0;
+      const avail = window.innerWidth - 32 - rail - pad;
+      const fit = Math.floor(avail / (5 + 4 * gapRatio));
+      return Math.min(want, fit);
+    }
+
+    function labelText(s, rail) {
+      if (!s.to) return `${s.from}화`;
+      return rail ? `${s.from}<br>~<br>${s.to}화` : `${s.from}~${s.to}화`;
+    }
+
+    function render() {
+      const desk = isDesktop();
+      const cell = cellSize();
+      const gap = Math.round(cell * 0.12);
+      const step = cell + gap;
+      const cols = desk ? 3 : 5;
+      const rows = desk ? 5 : 3;
+      const root = document.documentElement.style;
+      root.setProperty('--cell', `${cell}px`);
+      root.setProperty('--fs', `${Math.max(9, Math.round(cell * 0.19))}px`);
+
+      document.body.className = [
+        `sep-${state.sep}`, `lbl-${state.lbl}`, `tray-${desk ? 'float' : state.tray}`,
+        state.edge === 'on' ? 'edge' : '', desk ? 'desktop' : '',
+        $('btn-edit').classList.contains('on') ? 'editing' : '',
+      ].join(' ');
+
+      // 모바일: (열, 행) 그대로. 데스크탑: 진행 방향이 바뀌므로 행과 열을 바꿈
+      const pos = (c, r) => (desk ? [r * step, c * step] : [c * step, r * step]);
+      const noteW = desk ? cell : cell * 2 + gap;
+
+      $('timeline').innerHTML = SHEETS.map((s) => `
+        <section class="sheet">
+          <div class="label">${labelText(s, state.lbl === 'rail' && !desk)}</div>
+          <div class="grid" style="width:${cols * step - gap}px;height:${rows * step - gap}px">
+            ${s.blocks.map(([slot, c, r, t]) => {
+              const [x, y] = pos(c, r);
+              return `<div class="block" style="--c:${COLORS[slot]};left:${x}px;top:${y}px">${t}</div>`;
+            }).join('')}
+            ${s.notes.map(([c, r, t]) => {
+              const [x, y] = pos(c, r);
+              return `<div class="note" style="left:${x}px;top:${y}px;width:${noteW}px">${t}</div>`;
+            }).join('')}
+          </div>
+        </section>`).join('');
+
+      $('tray').innerHTML = `
+        ${COLORS.map((c) => `<div class="block" style="--c:${c}"></div>`).join('')}
+        <button class="add" aria-label="색 추가">+</button>
+        <div class="trash">여기로 끌면<br>삭제</div>`;
+    }
+
+    $('opts').addEventListener('click', (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      state[b.parentElement.dataset.k] = b.dataset.v;
+      renderOpts(); render();
+    });
+    $('btn-edit').addEventListener('click', (e) => { e.currentTarget.classList.toggle('on'); render(); });
+    window.addEventListener('resize', render);
+
+    $('copy').addEventListener('click', async () => {
+      const lines = ['[Phase 1 시트 목업]',
+        ...Object.entries(OPTIONS).map(([k, o]) => `${o.label}: ${o.items[state[k]]}`)];
+      const memo = $('memo').value.trim();
+      if (memo) lines.push(`메모: ${memo}`);
+      const text = lines.join('\n');
+      try { await navigator.clipboard.writeText(text); $('msg').textContent = '복사했습니다. 대화창에 붙여 넣어 주세요.'; }
+      catch { $('memo').value = text; $('memo').select(); $('msg').textContent = '위 칸의 내용을 직접 복사해 주세요.'; }
+    });
+
+    renderOpts(); render();
+  </script>
+</body>
+</html>
