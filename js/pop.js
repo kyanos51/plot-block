@@ -47,11 +47,10 @@ export function initPop(app) {
     const pad = 5;
     const ring = document.createElement('div');
     ring.className = 'press-ring';
-    ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px;--ring:${shade(color(g.slot), -0.06, 0.5)};--glow:${shade(color(g.slot), 0, 0.55)}`;
+    ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px;--ring:${shade(color(g.slot), -0.15)}`;
     document.body.appendChild(ring);
     const dur = LONG_PRESS_MS - CHARGE_DELAY;
-    ring.animate([{ opacity: 0, transform: 'scale(0.94)' }, { opacity: 1, transform: 'scale(1)' }],
-      { duration: dur, easing: 'ease-out', fill: 'forwards' });
+    ring.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, easing: 'ease-in', fill: 'forwards' });
     g.ring = ring;
     g.press = el.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.92)' }], { duration: dur, easing: 'ease-out', fill: 'forwards' });
   }

@@ -84,11 +84,11 @@ body:not(.editing):not(.pop-off) .grid .block { touch-action: none; }
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 6px 14px rgba(60, 50, 30, 0.18), inset 0 -3px 0 rgba(0, 0, 0, 0.08);
 }
 
-/* 길게 누르기: 블록 색의 옅은 빛 테두리가 부드럽게 번지며 드러남 */
+/* 길게 누르기: 테두리가 전체적으로 천천히 드러남 (가장자리를 살짝 흐리게 해서 딱딱하지 않게) */
 .press-ring {
   position: fixed; z-index: 1; pointer-events: none; opacity: 0;
-  border-radius: 14px;
-  box-shadow: 0 0 0 2px var(--ring), 0 0 12px 4px var(--glow);
+  border: 3px solid var(--ring); border-radius: 13px;
+  box-shadow: 0 0 3px var(--ring), inset 0 0 2px var(--ring);
 }
 
 /* ---------- 터뜨리기 연출 ---------- */
