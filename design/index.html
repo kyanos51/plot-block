@@ -133,9 +133,10 @@
     const CELL = 52, GAP = 6, STEP = CELL + GAP;
 
     const palettes = [
-      { name: 'A 크림', colors: ['#FFC8A2', '#A8DDC8', '#C7B8EA', '#F6E27F'] },
-      { name: 'B 선명', colors: ['#FF9E9E', '#8EC9F0', '#B5DC7A', '#FFD66B'] },
-      { name: 'C 차분', colors: ['#E8B4C0', '#B5CDA8', '#A9BCD8', '#E5CFA3'] },
+      { name: '지난 선택', colors: ['#FFCDBD', '#BFDDC8', '#C7B8EA', '#F6E27F'] },
+      { name: 'A1 기본', colors: ['#FFCDBD', '#BFDDC8', '#B4C8E4', '#F0DCA0'] },
+      { name: 'A2 차분', colors: ['#F5C4B3', '#B3D3BE', '#A9BEDD', '#E9D49C'] },
+      { name: 'A3 밝게', colors: ['#FFD3C4', '#C6E3CF', '#C0D4EE', '#F5E6B3'] },
     ];
     const backgrounds = [
       { name: '아이보리', c: '#F4F1EA' },
@@ -155,7 +156,7 @@
         note: null },
     ];
 
-    const state = { p: 0, bg: 0 };
+    const state = { p: 1, bg: 0 };
 
     function renderTabs() {
       $('palette-tabs').innerHTML = palettes.map((p, i) => `
