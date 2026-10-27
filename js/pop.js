@@ -4,6 +4,7 @@ import { createFx, GOLD, NAVY } from './fx.js';
 const MAX_CHAIN = 5;
 const LONG_PRESS_MS = 500;
 const MOVE_SLOP = 8; // 이만큼 움직이면 길게 누르기 대신 긋기로 판단
+const CHARGE_DELAY = 120; // 이 시간이 지나야 길게 누르기 표시 시작 (짧은 터치·긋기에는 안 보이게)
 
 export function initPop(app) {
   const { state, color, toast, findBlock, openMemo } = app;
@@ -30,22 +31,66 @@ export function initPop(app) {
       chain: [],
       last: { x: e.clientX, y: e.clientY },
       timer: setTimeout(onLongPress, LONG_PRESS_MS),
+      chargeTimer: setTimeout(startCharge, CHARGE_DELAY),
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onCancel);
   });
 
+  // ---------- 길게 누르기 ----------
+  // 누르는 동안: 블록이 눌리며 테두리에 선이 차오름. 다 차면 반짝이며 메모 화면이 블록에서 펼쳐짐
+  function startCharge() {
+    if (!g || g.swiping) return;
+    const el = g.startEl;
+    const r = el.getBoundingClientRect();
+    const pad = 5;
+    const w = r.width + pad * 2;
+    const h = r.height + pad * 2;
+    const rad = 13;
+    const ring = document.createElement('div');
+    ring.className = 'press-ring';
+    ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${w}px;height:${h}px;--ring:${shade(color(g.slot), -0.3)}`;
+    const i = 1.5; // 선 두께의 절반만큼 안쪽으로
+    ring.innerHTML = `<svg width="${w}" height="${h}"><path pathLength="100" d="M${w / 2},${i} H${w - rad} A${rad - i},${rad - i} 0 0 1 ${w - i},${rad} V${h - rad} A${rad - i},${rad - i} 0 0 1 ${w - rad},${h - i} H${rad} A${rad - i},${rad - i} 0 0 1 ${i},${h - rad} V${rad} A${rad - i},${rad - i} 0 0 1 ${rad},${i} Z"/></svg>`;
+    document.body.appendChild(ring);
+    const dur = LONG_PRESS_MS - CHARGE_DELAY;
+    ring.querySelector('path').animate([{ strokeDashoffset: 100 }, { strokeDashoffset: 0 }], { duration: dur, fill: 'forwards' });
+    ring.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, fill: 'forwards' });
+    g.ring = ring;
+    g.press = el.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.92)' }], { duration: dur, easing: 'ease-out', fill: 'forwards' });
+  }
+
+  function stopCharge(springBack) {
+    if (!g) return;
+    clearTimeout(g.chargeTimer);
+    if (g.ring) g.ring.remove();
+    if (g.press) {
+      g.press.cancel();
+      if (springBack) g.startEl.animate([{ transform: 'scale(0.94)' }, { transform: 'scale(1)' }], { duration: 160, easing: 'ease-out' });
+    }
+    g.ring = g.press = null;
+  }
+
   function onLongPress() {
     if (!g || g.swiping) return;
     const el = g.startEl;
+    const r = el.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const c = color(g.slot);
     end();
-    el.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.92)' }, { transform: 'scale(1.04)' }, { transform: 'scale(1)' }],
-      { duration: 200, easing: 'ease-out' }).finished.then(() => openMemo(el.dataset.id)).catch(() => {});
+    el.animate([{ transform: 'scale(0.92)' }, { transform: 'scale(1.16)', offset: 0.45 }, { transform: 'scale(1)' }],
+      { duration: 300, easing: 'ease-out' });
+    fx.ring(cx, cy, GOLD, 46, 3.5, 24);
+    fx.ring(cx, cy, shade(c, -0.15), 64, 3, 30, 0.6);
+    fx.sparkle(cx, cy, 10, { spread: 1.1, glow: 8 });
+    setTimeout(() => openMemo(el.dataset.id, { x: cx, y: cy }), 170);
   }
 
   function beginSwipe() {
     clearTimeout(g.timer);
+    stopCharge(false);
     g.swiping = true;
     // 긋는 동안은 시트를 움직이지 않으므로 블록 위치를 한 번만 계산
     g.blocks = [...document.querySelectorAll('.grid .block')].map((el) => {
@@ -158,6 +203,7 @@ export function initPop(app) {
   function end(keepLine = false) {
     if (!g) return;
     clearTimeout(g.timer);
+    stopCharge(!g.swiping);
     window.removeEventListener('pointermove', onMove);
     window.removeEventListener('pointerup', onUp);
     window.removeEventListener('pointercancel', onCancel);

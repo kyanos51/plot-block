@@ -7,6 +7,10 @@ export function initMemo(app) {
   const layer = $('memo');
   const list = $('memo-list');
   let slot = null;
+  let origin = null; // 메모를 연 블록 위치 (펼쳐지고 접히는 중심)
+  const canClip = CSS.supports('clip-path', 'circle(1px at 1px 1px)');
+  const clip = (r) => `circle(${r}px at ${origin.x}px ${origin.y}px)`;
+  const farthest = () => Math.hypot(Math.max(origin.x, innerWidth - origin.x), Math.max(origin.y, innerHeight - origin.y));
 
   // 시트 순서, 시트 안에서는 위→아래, 왼쪽→오른쪽
   function ordered(s) {
@@ -40,7 +44,7 @@ export function initMemo(app) {
     ta.style.height = `${ta.scrollHeight}px`;
   }
 
-  function open(blockId) {
+  function open(blockId, from) {
     const found = findBlock(blockId);
     if (!found) return;
     slot = found.block.slot;
@@ -61,8 +65,17 @@ export function initMemo(app) {
     // 누른 블록의 메모에 포커스 (키보드는 띄우지 않고 위치만 맞춤)
     const target = list.querySelector(`[data-id="${blockId}"]`);
     list.scrollTop = Math.max(0, target.offsetTop - list.offsetTop - 12);
-    layer.animate([{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }],
-      { duration: 280, easing: 'cubic-bezier(.2, .9, .3, 1)' });
+    origin = from && canClip ? from : null;
+    if (origin) {
+      // 누른 블록에서 원형으로 펼쳐짐
+      layer.animate([{ clipPath: clip(0) }, { clipPath: clip(farthest()) }],
+        { duration: 420, easing: 'cubic-bezier(.3, .8, .3, 1)' });
+      list.animate([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 320, delay: 120, easing: 'ease-out', fill: 'backwards' });
+    } else {
+      layer.animate([{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }],
+        { duration: 280, easing: 'cubic-bezier(.2, .9, .3, 1)' });
+    }
     target.animate(
       [{ boxShadow: `0 0 0 3px ${color(slot)}` }, { boxShadow: `0 0 0 3px ${color(slot)}`, offset: 0.6 }, { boxShadow: '0 0 0 0 transparent' }],
       { duration: 1400, delay: 200 }
@@ -72,8 +85,10 @@ export function initMemo(app) {
   function close() {
     if (layer.hidden) return;
     document.activeElement && document.activeElement.blur();
-    layer.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(100%)' }],
-      { duration: 220, easing: 'ease-in' }).finished.then(() => {
+    const anim = origin
+      ? layer.animate([{ clipPath: clip(farthest()) }, { clipPath: clip(0) }], { duration: 300, easing: 'cubic-bezier(.6, 0, .8, .4)' })
+      : layer.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(100%)' }], { duration: 220, easing: 'ease-in' });
+    anim.finished.then(() => {
       layer.hidden = true;
       document.documentElement.classList.remove('memo-open');
     });
