@@ -226,7 +226,9 @@ export function initPop(app) {
           { transform: 'scale(1.35)', opacity: 0 },
         ], { duration: 190, easing: 'ease-in', fill: 'forwards' });
         setTimeout(() => {
-          fx.burst(b.cx, b.cy, blockColor, n);
+          // 전부 완성: 블록 색 대신 금색 별 조각과 남색 반짝이로만 흩어짐
+          if (tier === 'B') fx.burst(b.cx, b.cy, GOLD, n, { sparkColor: NAVY });
+          else fx.burst(b.cx, b.cy, blockColor, n);
           if (tier !== 'base') fx.sparkle(b.cx, b.cy, tier === 'B' ? 8 : 5, { glow: 8 });
           if (b.block.stage === 2) fx.ring(b.cx, b.cy, GOLD, 44, 3.5, 26);
           // 마지막 블록에서 금색 원과 반짝이가 퍼짐 (연결 개수·단계 공통)
@@ -248,16 +250,21 @@ export function initPop(app) {
         fx.sparkle(cx, cy, 16 + n * 4, { spread: 1.5, glow: 8 });
       }
       if (tier === 'B') {
-        // 밤하늘: 금색 원과 금색·남색 반짝이
+        // 밤하늘 (금색·남색만 사용): 블록들을 잇는 별자리, 두 겹의 금색 원,
+        // 금색·남색 반짝이, 화면 곳곳의 별, 별똥별
         const far = Math.max(window.innerWidth, window.innerHeight);
+        fx.constellation(chain.map((b) => ({ x: b.cx, y: b.cy })));
         fx.ring(cx, cy, GOLD, far * 0.55, 5, 60, 0.6);
-        fx.sparkle(cx, cy, 34, { spread: 2.2, glow: 9, life: [60, 100] });
-        fx.sparkle(cx, cy, 46, { color: NAVY, spread: 2.6, glow: 0, size: [2.5, 5.5], life: [80, 130], drag: 0.975, alpha: 0.75, delay: 20 });
+        fx.ring(cx, cy, GOLD, far * 0.35, 3, 55, 0.45, 14);
+        fx.sparkle(cx, cy, 40, { spread: 2.4, glow: 9, life: [60, 100] });
+        fx.sparkle(cx, cy, 50, { color: NAVY, spread: 2.8, glow: 0, size: [3, 6.5], life: [80, 130], drag: 0.975, alpha: 0.85, delay: 20 });
+        fx.shower(44, [GOLD, NAVY]);
+        [10, 32, 58].forEach((d) => fx.streak(d));
       }
     }, allPopped);
 
     // 원래 자리로 복귀
-    const back = allPopped + (tier === 'B' ? 1300 : tier === 'A' ? 750 : 520);
+    const back = allPopped + (tier === 'B' ? 1700 : tier === 'A' ? 750 : 520);
     chain.forEach((b, i) => {
       setTimeout(() => {
         b.el.getAnimations().forEach((a) => a.cancel());
