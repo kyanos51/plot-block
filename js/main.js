@@ -115,7 +115,7 @@ function renderTray() {
   $('tray').innerHTML = `
     ${SLOTS.map((c, i) => `<div class="block slot" data-slot="${i}" style="--c:${c}"></div>`).join('')}
     <button class="add" data-soon aria-label="색 변경">+</button>
-    <div class="trash">여기로 끌면<br>삭제</div>`;
+    <div class="trash">삭제</div>`;
 }
 
 function addSheet() {
@@ -236,21 +236,27 @@ function edgeSpeed() {
   const top = document.querySelector('.appbar').getBoundingClientRect().bottom;
   const trayTop = $('tray').getBoundingClientRect().top;
   if (drag.py < top + EDGE) return -MAX * Math.min(1, 1 - (drag.py - top) / EDGE);
-  // 트레이 바로 위 구간에서만 아래로 스크롤 (트레이 위는 삭제 구역)
-  if (drag.py > trayTop - EDGE && drag.py < trayTop) return MAX * (1 - (trayTop - drag.py) / EDGE);
+  // 트레이 위쪽 64px부터 화면 맨 아래까지가 아래 스크롤 구역. 깊이 내릴수록 빨라짐
+  const start = trayTop - EDGE;
+  if (drag.py > start) {
+    const k = Math.min(1, (drag.py - start) / EDGE);
+    const below = Math.max(0, drag.py - trayTop) / Math.max(1, window.innerHeight - trayTop);
+    return MAX * k + 8 * Math.min(1, below);
+  }
   return 0;
 }
 
-function overTray() {
-  const r = $('tray').getBoundingClientRect();
-  return drag.px >= r.left - 8 && drag.px <= r.right + 8 && drag.py >= r.top - 8 && drag.py <= r.bottom + 8;
+// 삭제는 트레이 오른쪽 삭제 칸 위에서만 (트레이의 나머지는 아래 스크롤 구역)
+function overTrash() {
+  const r = $('tray').querySelector('.trash').getBoundingClientRect();
+  return drag.px >= r.left - 10 && drag.px <= r.right + 10 && drag.py >= r.top - 10 && drag.py <= r.bottom + 10;
 }
 
 function updateTarget() {
   const prev = drag.target;
   let target = null;
 
-  if (overTray()) {
+  if (overTrash()) {
     target = { trash: true };
   } else {
     const cx = drag.x + L.cell / 2;
