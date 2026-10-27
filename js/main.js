@@ -3,7 +3,6 @@ const $ = (id) => document.getElementById(id);
 
 // ---------- 상태 ----------
 const SLOTS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
-const MAX_PER_SHEET = 4;
 const COLS = 5;
 const ROWS = 3;
 
@@ -166,11 +165,12 @@ function startDrag(e, opts) {
   drag = {
     kind, id, slot, title, el, wrap, offX, offY, x, y,
     px: e.clientX, py: e.clientY, t: performance.now(),
-    vx: 0, rot: 0, target: null, cellKey: '', raf: 0,
+    vx: 0, rot: 0, target: null, cellKey: '', raf: 0, edgeSince: 0,
   };
   window.addEventListener('pointermove', onMove);
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onUp);
+  document.addEventListener('touchmove', blockScroll, { passive: false });
   drag.raf = requestAnimationFrame(tick);
 }
 
@@ -205,7 +205,26 @@ function tick() {
   drag.raf = requestAnimationFrame(tick);
 }
 
+// 블록을 들고 있는 동안 화면이 손가락을 따라 스크롤되지 않게 막음
+function blockScroll(e) {
+  e.preventDefault();
+}
+
+// 자동 스크롤: 트레이에서 꺼낸 블록은 사용 안 함.
+// 시트 블록 이동은 가장자리에 0.4초 머물러야 시작 (스치기만 해서는 움직이지 않게)
 function autoScrollSpeed() {
+  if (drag.kind === 'new') return 0;
+  const raw = edgeSpeed();
+  if (!raw) {
+    drag.edgeSince = 0;
+    return 0;
+  }
+  const now = performance.now();
+  if (!drag.edgeSince) drag.edgeSince = now;
+  return now - drag.edgeSince >= 400 ? raw : 0;
+}
+
+function edgeSpeed() {
   const EDGE = 64;
   const MAX = 14;
   if (L.desk) {
@@ -278,8 +297,6 @@ function updateTarget() {
 function canPlace(sheet, col, row) {
   const self = drag.kind === 'move' ? drag.id : null;
   if (sheet.blocks.some((b) => b.id !== self && b.col === col && b.row === row)) return false;
-  const inSheet = self && sheet.blocks.some((b) => b.id === self);
-  if (!inSheet && sheet.blocks.length >= MAX_PER_SHEET) return false;
   return true;
 }
 
@@ -288,6 +305,7 @@ function onUp() {
   window.removeEventListener('pointermove', onMove);
   window.removeEventListener('pointerup', onUp);
   window.removeEventListener('pointercancel', onUp);
+  document.removeEventListener('touchmove', blockScroll);
   cancelAnimationFrame(drag.raf);
   $('tray').classList.remove('hot');
 
