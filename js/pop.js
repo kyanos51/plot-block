@@ -47,10 +47,11 @@ export function initPop(app) {
     const pad = 5;
     const ring = document.createElement('div');
     ring.className = 'press-ring';
-    ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px;--ring:${shade(color(g.slot), -0.3)}`;
+    ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px;--ring:${shade(color(g.slot), -0.06, 0.5)};--glow:${shade(color(g.slot), 0, 0.55)}`;
     document.body.appendChild(ring);
     const dur = LONG_PRESS_MS - CHARGE_DELAY;
-    ring.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, easing: 'ease-in', fill: 'forwards' });
+    ring.animate([{ opacity: 0, transform: 'scale(0.94)' }, { opacity: 1, transform: 'scale(1)' }],
+      { duration: dur, easing: 'ease-out', fill: 'forwards' });
     g.ring = ring;
     g.press = el.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.92)' }], { duration: dur, easing: 'ease-out', fill: 'forwards' });
   }
@@ -290,9 +291,9 @@ export function initPop(app) {
 }
 
 // 색을 밝게(+) 또는 어둡게(-)
-function shade(hex, amt) {
+function shade(hex, amt, alpha = 1) {
   const n = parseInt(hex.slice(1), 16);
   const f = (c) => Math.max(0, Math.min(255, Math.round(amt < 0 ? c * (1 + amt) : c + (255 - c) * amt)));
   const r = f(n >> 16), gg = f((n >> 8) & 255), b = f(n & 255);
-  return `rgb(${r}, ${gg}, ${b})`;
+  return `rgba(${r}, ${gg}, ${b}, ${alpha})`;
 }
