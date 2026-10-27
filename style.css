@@ -1,0 +1,134 @@
+:root {
+  --bg: #F4F1EA;
+  --card: #FFFDF8;
+  --ink: #3B3833;
+  --sub: #8A847A;
+  --line: #E6E0D4;
+  --ok: #7BC4A4;
+  --ng: #E8908F;
+  --cell: 52px;
+  --gap: 6px;
+  color-scheme: light; /* 다크모드 무시 */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body { padding-bottom: env(safe-area-inset-bottom); }
+
+.top {
+  position: sticky; top: 0; z-index: 10;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.top h1 { margin: 0; font-size: 18px; }
+.top small { font-size: 12px; color: var(--sub); font-weight: 400; margin-left: 6px; }
+
+main { padding: 12px 16px 40px; max-width: 520px; margin: 0 auto; }
+
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(60, 50, 30, 0.06);
+}
+.card h2 { margin: 0 0 10px; font-size: 15px; }
+
+.hint { font-size: 12px; color: var(--sub); line-height: 1.55; margin: 8px 0 0; }
+
+.info { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: 13px; }
+.info dt { color: var(--sub); }
+.info dd { margin: 0; font-weight: 600; }
+
+.row { display: flex; gap: 8px; }
+.row.center { align-items: center; gap: 16px; }
+
+.btn {
+  flex: 1;
+  border: 0; border-radius: 10px;
+  padding: 12px;
+  font: inherit; font-size: 14px; font-weight: 600;
+  background: #EDE7DB; color: var(--ink);
+  touch-action: manipulation;
+}
+.btn:active { transform: scale(0.96); }
+.btn.wide { width: 100%; margin-top: 8px; }
+
+/* O/X 판정 */
+.judge { display: flex; gap: 6px; margin-top: 10px; }
+.judge button {
+  flex: 1; border: 1px solid var(--line); background: transparent;
+  border-radius: 8px; padding: 8px; font: inherit; font-size: 13px; color: var(--sub);
+  touch-action: manipulation;
+}
+.judge button.on[data-v="O"] { background: var(--ok); border-color: var(--ok); color: #fff; }
+.judge button.on[data-v="X"] { background: var(--ng); border-color: var(--ng); color: #fff; }
+
+/* 블록 공통: 길게 눌러도 iOS 메뉴·선택·확대경이 뜨지 않게 */
+.block, .sheet, .scrollinner {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.block {
+  width: var(--cell); height: var(--cell);
+  border-radius: 9px;
+  background: var(--c);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+  touch-action: none;
+}
+.block.solo { flex: none; transition: transform 0.12s; }
+.block.solo.pressing { transform: scale(0.94); }
+.block.solo.fired { animation: pop 0.35s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes pop { 0% { transform: scale(0.9); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+/* 3. 드래그 시트 (5×3, 격자선 없음) */
+.sheet {
+  position: relative;
+  width: calc(var(--cell) * 5 + var(--gap) * 4);
+  height: calc(var(--cell) * 3 + var(--gap) * 2);
+  margin: 4px auto 0;
+  touch-action: none;
+}
+.sheet .block { position: absolute; left: 0; top: 0; will-change: transform; }
+.sheet .block.settle { transition: transform 0.32s cubic-bezier(.34, 1.56, .64, 1), box-shadow 0.2s; }
+.sheet .block.lifted {
+  z-index: 5;
+  box-shadow: 0 10px 18px rgba(60, 50, 30, 0.22), inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+}
+.sheet .ghost {
+  position: absolute; left: 0; top: 0;
+  width: var(--cell); height: var(--cell);
+  border-radius: 9px;
+  border: 2px dashed rgba(60, 50, 30, 0.25);
+  opacity: 0; transition: opacity 0.1s;
+  pointer-events: none;
+}
+.sheet .ghost.show { opacity: 1; }
+.sheet .ghost.bad { border-color: var(--ng); }
+
+/* 5. 긋기 vs 스크롤 */
+.scrollbox {
+  height: 260px; overflow-y: auto; border-radius: 10px;
+  background: #FAF7F0;
+  -webkit-overflow-scrolling: touch;
+}
+.scrollinner { position: relative; height: 720px; touch-action: pan-y; }
+.scrollinner .block { position: absolute; }
+.scrollinner svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+textarea {
+  width: 100%; min-height: 70px; border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px; font: inherit; font-size: 16px; /* 16px 미만이면 iOS가 확대함 */
+  background: #fff; color: var(--ink); resize: vertical;
+}
