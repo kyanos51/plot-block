@@ -39,24 +39,18 @@ export function initPop(app) {
   });
 
   // ---------- 길게 누르기 ----------
-  // 누르는 동안: 블록이 눌리며 테두리에 선이 차오름. 다 차면 반짝이며 메모 화면이 블록에서 펼쳐짐
+  // 누르는 동안: 블록이 눌려 들어가고 테두리가 전체적으로 천천히 드러남. 다 차면 바로 메모 화면으로
   function startCharge() {
     if (!g || g.swiping) return;
     const el = g.startEl;
     const r = el.getBoundingClientRect();
     const pad = 5;
-    const w = r.width + pad * 2;
-    const h = r.height + pad * 2;
-    const rad = 13;
     const ring = document.createElement('div');
     ring.className = 'press-ring';
-    ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${w}px;height:${h}px;--ring:${shade(color(g.slot), -0.3)}`;
-    const i = 1.5; // 선 두께의 절반만큼 안쪽으로
-    ring.innerHTML = `<svg width="${w}" height="${h}"><path pathLength="100" d="M${w / 2},${i} H${w - rad} A${rad - i},${rad - i} 0 0 1 ${w - i},${rad} V${h - rad} A${rad - i},${rad - i} 0 0 1 ${w - rad},${h - i} H${rad} A${rad - i},${rad - i} 0 0 1 ${i},${h - rad} V${rad} A${rad - i},${rad - i} 0 0 1 ${rad},${i} Z"/></svg>`;
+    ring.style.cssText = `left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px;--ring:${shade(color(g.slot), -0.3)}`;
     document.body.appendChild(ring);
     const dur = LONG_PRESS_MS - CHARGE_DELAY;
-    ring.querySelector('path').animate([{ strokeDashoffset: 100 }, { strokeDashoffset: 0 }], { duration: dur, fill: 'forwards' });
-    ring.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, fill: 'forwards' });
+    ring.animate([{ opacity: 0 }, { opacity: 1 }], { duration: dur, easing: 'ease-in', fill: 'forwards' });
     g.ring = ring;
     g.press = el.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.92)' }], { duration: dur, easing: 'ease-out', fill: 'forwards' });
   }
@@ -67,25 +61,16 @@ export function initPop(app) {
     if (g.ring) g.ring.remove();
     if (g.press) {
       g.press.cancel();
-      if (springBack) g.startEl.animate([{ transform: 'scale(0.94)' }, { transform: 'scale(1)' }], { duration: 160, easing: 'ease-out' });
+      if (springBack) g.startEl.animate([{ transform: 'scale(0.93)' }, { transform: 'scale(1)' }], { duration: 160, easing: 'ease-out' });
     }
     g.ring = g.press = null;
   }
 
   function onLongPress() {
     if (!g || g.swiping) return;
-    const el = g.startEl;
-    const r = el.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const cy = r.top + r.height / 2;
-    const c = color(g.slot);
-    end();
-    el.animate([{ transform: 'scale(0.92)' }, { transform: 'scale(1.16)', offset: 0.45 }, { transform: 'scale(1)' }],
-      { duration: 300, easing: 'ease-out' });
-    fx.ring(cx, cy, GOLD, 46, 3.5, 24);
-    fx.ring(cx, cy, shade(c, -0.15), 64, 3, 30, 0.6);
-    fx.sparkle(cx, cy, 10, { spread: 1.1, glow: 8 });
-    setTimeout(() => openMemo(el.dataset.id, { x: cx, y: cy }), 170);
+    const id = g.startEl.dataset.id;
+    end(); // 블록이 눌린 상태에서 원래 크기로 돌아옴
+    openMemo(id);
   }
 
   function beginSwipe() {

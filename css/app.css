@@ -84,12 +84,10 @@ body:not(.editing):not(.pop-off) .grid .block { touch-action: none; }
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 6px 14px rgba(60, 50, 30, 0.18), inset 0 -3px 0 rgba(0, 0, 0, 0.08);
 }
 
-/* 길게 누르기: 테두리에 선이 차오름 */
-.press-ring { position: fixed; z-index: 23; pointer-events: none; opacity: 0; }
-.press-ring svg { display: block; overflow: visible; }
-.press-ring path {
-  fill: none; stroke: var(--ring); stroke-width: 3; stroke-linecap: round;
-  stroke-dasharray: 100; stroke-dashoffset: 100;
+/* 길게 누르기: 테두리가 전체적으로 천천히 드러남 */
+.press-ring {
+  position: fixed; z-index: 23; pointer-events: none; opacity: 0;
+  border: 3px solid var(--ring); border-radius: 13px;
 }
 
 /* ---------- 터뜨리기 연출 ---------- */
