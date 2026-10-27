@@ -1,5 +1,6 @@
 // Phase 3: 터뜨리기 (같은 색 블록을 그어서 잇고, 놓으면 터짐)
 import { createFx, GOLD, NAVY } from './fx.js';
+import { createCombo } from './combo.js';
 
 const MAX_CHAIN = 5;
 const LONG_PRESS_MS = 500;
@@ -13,13 +14,14 @@ export function initPop(app) {
   const svg = $('link-svg');
 
   let g = null;       // 진행 중인 긋기
-  let busy = false;   // 터지는 연출 중에는 입력 막음
+  const combo = createCombo(fx);
+  const popping = new Set(); // 터지는 중인 블록 id: 다시 잇거나 누를 수 없음
 
   // ---------- 긋기 시작 ----------
   $('timeline').addEventListener('pointerdown', (e) => {
-    if (state.editing || busy || g) return;
+    if (state.editing || g) return;
     const el = e.target.closest('.grid .block');
-    if (!el) return;
+    if (!el || popping.has(el.dataset.id)) return;
 
     const { block } = findBlock(el.dataset.id);
     g = {
@@ -79,7 +81,8 @@ export function initPop(app) {
     stopCharge(false);
     g.swiping = true;
     // 긋는 동안은 시트를 움직이지 않으므로 블록 위치를 한 번만 계산
-    g.blocks = [...document.querySelectorAll('.grid .block')].map((el) => {
+    combo.swipeStart();
+    g.blocks = [...document.querySelectorAll('.grid .block')].filter((el) => !popping.has(el.dataset.id)).map((el) => {
       const r = el.getBoundingClientRect();
       const { block } = findBlock(el.dataset.id);
       return { el, block, r, cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
@@ -154,8 +157,7 @@ export function initPop(app) {
     hit.el.animate([{ boxShadow: 'inset 0 0 0 3px #D9827E' }, { boxShadow: 'inset 0 0 0 0 #D9827E' }], { duration: 500 });
     for (const b of g.chain) unlink(b, true);
     $('chain-count').textContent = '✕';
-    svg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 380, delay: 120, fill: 'forwards' })
-      .finished.then(() => { svg.innerHTML = ''; svg.getAnimations().forEach((a) => a.cancel()); });
+    fadeLine(380, 120);
   }
 
   function unlink(b, shake) {
@@ -178,11 +180,15 @@ export function initPop(app) {
       return;
     }
     if (swiping && !failed) for (const b of chain) unlink(b, true);
+    if (swiping) combo.swipeEnd();
     end();
   }
 
   function onCancel() {
-    if (g && g.swiping) for (const b of g.chain) unlink(b, false);
+    if (g && g.swiping) {
+      for (const b of g.chain) unlink(b, false);
+      combo.swipeEnd();
+    }
     end();
   }
 
@@ -205,16 +211,26 @@ export function initPop(app) {
 
   // ---------- 터짐 ----------
   // 등급: 기본 / A(완성 블록 1개 이상) / B(전부 완성)
+  // 지금 그려진 선을 따로 떼어 서서히 지움 (그동안 바로 다음 긋기를 할 수 있게)
+  function fadeLine(duration, delay = 0) {
+    const ghost = svg.cloneNode(true);
+    ghost.removeAttribute('id');
+    document.body.appendChild(ghost);
+    svg.innerHTML = '';
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration, delay, fill: 'forwards' })
+      .finished.then(() => ghost.remove());
+  }
+
   function pop(chain) {
-    busy = true;
     const n = chain.length;
+    chain.forEach((b) => popping.add(b.block.id));
+    combo.pop(chain[0].block.slot);
     const done = chain.filter((b) => b.block.stage === 2).length;
     const tier = done === n ? 'B' : done > 0 ? 'A' : 'base';
     const blockColor = color(chain[0].block.slot);
     const GAP_MS = 85;
 
-    svg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160 + n * GAP_MS, fill: 'forwards' })
-      .finished.then(() => { svg.innerHTML = ''; svg.getAnimations().forEach((a) => a.cancel()); });
+    fadeLine(160 + n * GAP_MS);
 
     chain.forEach((b, i) => {
       setTimeout(() => {
@@ -274,9 +290,9 @@ export function initPop(app) {
           { transform: 'scale(0.96)', offset: 0.8 },
           { transform: 'scale(1)', opacity: 1 },
         ], { duration: 360, easing: 'ease-out' });
+        popping.delete(b.block.id);
       }, back + i * 60);
     });
-    setTimeout(() => { busy = false; }, back + n * 60 + 360);
   }
 
   function shake(amp, duration) {

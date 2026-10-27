@@ -183,6 +183,21 @@ body.desktop .timeline {
 body.desktop .sheet { flex: none; padding: 0 14px; border-bottom: 0; border-right: 1px solid var(--line); }
 body.desktop .add-sheet { flex: none; width: 120px; margin: 0 0 0 14px; align-self: stretch; }
 
+/* ---------- 콤보 ---------- */
+.combo {
+  position: fixed; left: 50%; top: 40%; z-index: 28; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center;
+  color: #E3C07E; /* 연출과 같은 금색 */
+  text-shadow: 0 1px 0 rgba(140, 105, 40, 0.35), 0 0 14px rgba(227, 192, 126, 0.55);
+  transform: translate(-50%, -50%);
+  font-size: calc(16px * var(--grow, 1));
+}
+.combo[hidden] { display: none; }
+.combo-num-wrap { position: relative; display: block; }
+.combo-num { display: block; font-size: 3.6em; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+.combo-old { position: absolute; left: 50%; top: 0; }
+.combo-label { margin-top: 2px; font-size: 0.9em; font-weight: 800; letter-spacing: 4px; }
+
 /* ---------- 테스트용 초기화 ---------- */
 .reset-btn {
   display: block; margin: 18px auto 0; padding: 8px 14px; border: 0; border-radius: 99px;
