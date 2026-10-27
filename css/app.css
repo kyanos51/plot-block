@@ -45,6 +45,7 @@ button { font: inherit; color: inherit; touch-action: manipulation; }
 .bar-btn.on { background: var(--ink); color: var(--bg); }
 .bar-btn:disabled { opacity: 0.4; }
 .bar-btn[data-soon] { opacity: 0.45; }
+.bar-btn.off { opacity: 0.5; text-decoration: line-through; }
 
 /* ---------- 타임라인 ---------- */
 .timeline { padding: 0 16px 140px; }
@@ -60,7 +61,7 @@ button { font: inherit; color: inherit; touch-action: manipulation; }
 }
 body.editing .add-sheet { display: block; }
 
-.version { margin: 18px 0 0; text-align: center; font-size: 10px; color: var(--sub); }
+.version { margin: 10px 0 0; text-align: center; font-size: 10px; color: var(--sub); }
 
 /* ---------- 블록 ---------- */
 .block {
@@ -76,6 +77,44 @@ body.editing .add-sheet { display: block; }
   touch-action: pan-y; /* 기본 모드: 블록 위에서도 스크롤 */
 }
 body.editing .grid .block { touch-action: none; cursor: grab; }
+/* 기본 모드에서 터뜨리기가 켜져 있으면 블록 위는 긋기 전용, 꺼져 있으면 스크롤 */
+body:not(.editing):not(.pop-off) .grid .block { touch-action: none; }
+.grid .block.linked {
+  z-index: 2;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 6px 14px rgba(60, 50, 30, 0.18), inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* 테스트용 완성도 표시 (실제 앱에서는 겉으로 표시하지 않음) */
+body.stage-test .grid .block[data-stage="1"]::after,
+body.stage-test .grid .block[data-stage="2"]::after {
+  position: absolute; top: 2px; right: 4px; font-size: 10px; color: rgba(40, 36, 30, 0.6);
+}
+body.stage-test .grid .block[data-stage="1"]::after { content: "검토"; font-size: 8px; }
+body.stage-test .grid .block[data-stage="2"]::after { content: "★"; color: #C9962E; }
+.stage-test-btn {
+  display: block; margin: 18px auto 0; padding: 8px 14px; border: 0; border-radius: 99px;
+  background: rgba(0, 0, 0, 0.05); font-size: 12px; color: var(--sub);
+}
+body.stage-test .stage-test-btn { background: var(--ink); color: var(--bg); }
+
+/* ---------- 터뜨리기 연출 ---------- */
+.link-svg, .fx, .flash { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.link-svg { z-index: 24; overflow: visible; }
+.fx { z-index: 26; }
+.flash { z-index: 27; background: #fff; opacity: 0; }
+.chain-count {
+  position: fixed; left: 0; top: 0; z-index: 28; pointer-events: none;
+  min-width: 30px; padding: 4px 9px; border-radius: 99px;
+  background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 800; text-align: center;
+  opacity: 0; transition: opacity 0.12s;
+}
+.chain-count.show { opacity: 1; }
+.banner {
+  position: fixed; left: 50%; top: 42%; z-index: 29; pointer-events: none;
+  font-size: 44px; font-weight: 900; letter-spacing: 2px; color: #C9962E;
+  text-shadow: 0 2px 0 #fff, 0 6px 20px rgba(201, 150, 46, 0.45);
+  transform: translate(-50%, -50%); opacity: 0;
+}
 body.edge .block { box-shadow: inset 0 0 0 1px rgba(60, 45, 30, 0.14), inset 0 -3px 0 rgba(0, 0, 0, 0.08); }
 .block.hidden { opacity: 0; }
 

@@ -1,11 +1,13 @@
 // 오프라인 실행용 서비스워커.
 // 네트워크 우선, 실패하면 캐시 사용 (개발 중 업데이트가 바로 반영되도록).
-const CACHE = 'plot-block-v4';
+const CACHE = 'plot-block-v5';
 const SHELL = [
   './',
   './index.html',
   './css/app.css',
   './js/main.js',
+  './js/pop.js',
+  './js/fx.js',
   './manifest.webmanifest',
   './icons/icon-180.png',
   './icons/icon-192.png',

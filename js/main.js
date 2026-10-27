@@ -1,8 +1,10 @@
-// Phase 2 프로토타입: 블록 쌓기 조작감 검증 (데이터 저장 없음)
+// 프로토타입: 블록 쌓기(Phase 2)와 터뜨리기(Phase 3) 조작감 검증 (데이터 저장 없음)
+import { initPop } from './pop.js';
+
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r4';
+const VERSION = 'r5';
 
 // ---------- 상태 ----------
 const SLOTS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
@@ -14,22 +16,24 @@ const uid = () => `b${nextId++}`;
 
 const state = {
   editing: false,
+  popOff: false,
+  stageTest: false, // 테스트용: 탭해서 완성도 지정
   sheets: [
     { id: 's1', from: 1, to: 17, blocks: [
-      { id: 'b1', slot: 0, col: 0, row: 1, title: '첫 만남' },
-      { id: 'b2', slot: 2, col: 2, row: 1, title: '복선' },
+      { id: 'b1', slot: 0, col: 0, row: 1, title: '첫 만남', stage: 2 },
+      { id: 'b2', slot: 2, col: 2, row: 1, title: '복선', stage: 2 },
     ] },
     { id: 's2', from: 18, blocks: [
       { id: 'b3', slot: 1, col: 1, row: 1, title: '배신' },
-      { id: 'b4', slot: 0, col: 3, row: 1, title: '재회' },
+      { id: 'b4', slot: 0, col: 3, row: 1, title: '재회', stage: 2 },
     ] },
     { id: 's3', from: 19, to: 30, blocks: [
       { id: 'b5', slot: 3, col: 0, row: 1, title: '수련' },
       { id: 'b6', slot: 2, col: 2, row: 1, title: '회수' },
-      { id: 'b7', slot: 0, col: 4, row: 1, title: '고백' },
+      { id: 'b7', slot: 0, col: 4, row: 1, title: '고백', stage: 2 },
     ] },
     { id: 's4', from: 31, to: 35, blocks: [
-      { id: 'b8', slot: 2, col: 1, row: 1, title: '진실' },
+      { id: 'b8', slot: 2, col: 1, row: 1, title: '진실', stage: 1 },
     ] },
     { id: 's5', from: 36, to: 50, blocks: [] },
   ],
@@ -95,6 +99,7 @@ function render() {
   document.documentElement.style.setProperty('--cell', `${L.cell}px`);
   document.body.classList.toggle('desktop', L.desk);
   document.body.classList.toggle('editing', state.editing);
+  document.body.classList.toggle('stage-test', state.stageTest);
 
   const w = (L.desk ? ROWS : COLS) * L.step - L.gap;
   const h = (L.desk ? COLS : ROWS) * L.step - L.gap;
@@ -106,13 +111,19 @@ function render() {
         <div class="ghost"></div>
         ${s.blocks.map((b) => {
           const [x, y] = cellToXY(b.col, b.row, L);
-          return `<div class="block" data-id="${b.id}" style="--c:${SLOTS[b.slot]};left:${x}px;top:${y}px">${b.title}</div>`;
+          return `<div class="block" data-id="${b.id}" data-stage="${b.stage || 0}" style="--c:${SLOTS[b.slot]};left:${x}px;top:${y}px">${b.title}</div>`;
         }).join('')}
       </div>
     </section>`).join('') + `<button class="add-sheet" id="add-sheet">+ 시트 추가</button>
+    <button class="stage-test-btn" id="stage-test">${state.stageTest ? '완성도 지정 끝내기' : '완성도 지정 (테스트용)'}</button>
     <p class="version">프로토타입 ${VERSION}</p>`;
 
   $('add-sheet').addEventListener('click', addSheet);
+  $('stage-test').addEventListener('click', () => {
+    state.stageTest = !state.stageTest;
+    if (state.stageTest) toast('블록을 탭하면 설계 → 검토 → 완성 순으로 바뀝니다');
+    render();
+  });
 }
 
 function renderTray() {
@@ -349,7 +360,7 @@ function onUp() {
       t.sheet.blocks.push(b);
     } else {
       id = uid();
-      t.sheet.blocks.push({ id, slot: d.slot, col: t.col, row: t.row, title: '' });
+      t.sheet.blocks.push({ id, slot: d.slot, col: t.col, row: t.row, title: '', stage: 0 });
     }
     d.wrap.remove();
     render();
@@ -453,6 +464,17 @@ $('tray').addEventListener('pointerdown', (e) => {
   startDrag(e, { el, kind: 'new', slot: Number(el.dataset.slot), title: '' });
 });
 
+// 테스트용 완성도 지정: 탭할 때마다 설계(0) → 검토(1) → 완성(2)
+$('timeline').addEventListener('click', (e) => {
+  if (!state.stageTest || state.editing) return;
+  const el = e.target.closest('.grid .block');
+  if (!el) return;
+  const { block } = findBlock(el.dataset.id);
+  block.stage = ((block.stage || 0) + 1) % 3;
+  toast(['설계', '검토', '완성'][block.stage]);
+  render();
+});
+
 document.addEventListener('contextmenu', (e) => {
   if (e.target.closest('.block, .tray')) e.preventDefault();
 });
@@ -480,5 +502,6 @@ window.addEventListener('resize', () => {
 renderTray();
 render();
 updateUndo();
+initPop({ state, SLOTS, toast, findBlock });
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
