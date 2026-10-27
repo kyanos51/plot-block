@@ -73,6 +73,20 @@ export function createCombo(fx) {
     const cy = r.top + r.height / 2;
     fx.ring(cx, cy, GOLD, 60 + Math.min(count, 10) * 6, 3, 26, 0.7);
     fx.sparkle(cx, cy, 8 + Math.min(count, 10), { spread: 1.3, glow: 8 });
+
+    // 10콤보마다: 콤보 글자 중심에서 큰 금색 원과 반짝이가 화면으로 퍼짐
+    if (count % 10 === 0) {
+      const far = Math.max(window.innerWidth, window.innerHeight);
+      fx.ring(cx, cy, GOLD, far * 0.5, 5, 55, 0.75);
+      fx.ring(cx, cy, GOLD, far * 0.3, 3, 48, 0.55, 10);
+      fx.sparkle(cx, cy, 44, { spread: 2.8, glow: 9, life: [60, 100] });
+      el.animate([
+        { transform: 'translate(-50%, -50%) scale(1)' },
+        { transform: 'translate(-50%, -50%) scale(1.3)', offset: 0.35 },
+        { transform: 'translate(-50%, -50%) scale(0.94)', offset: 0.7 },
+        { transform: 'translate(-50%, -50%) scale(1)' },
+      ], { duration: 520, delay: 120, easing: 'ease-out' });
+    }
   }
 
   function hide() {
