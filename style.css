@@ -62,6 +62,8 @@ main { padding: 12px 16px 40px; max-width: 520px; margin: 0 auto; }
   touch-action: manipulation;
 }
 .btn:active { transform: scale(0.96); }
+.native-switch { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+
 .btn.wide { width: 100%; margin-top: 8px; }
 
 /* O/X 판정 */

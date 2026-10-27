@@ -12,15 +12,17 @@ const haptic = {
   standard() {
     if (navigator.vibrate) navigator.vibrate(12);
   },
-  iosSwitch() {
+  // A: 숨긴 스위치, B: 화면 밖에 둔 스위치 (display:none이 막는 경우 대비)
+  iosSwitch(variant = 'A') {
     const label = document.createElement('label');
     label.setAttribute('aria-hidden', 'true');
-    label.style.display = 'none';
+    if (variant === 'A') label.style.display = 'none';
+    else label.style.cssText = 'position:fixed;left:-100px;top:0;opacity:0;pointer-events:none;';
     const input = document.createElement('input');
     input.type = 'checkbox';
     input.setAttribute('switch', '');
     label.appendChild(input);
-    document.head.appendChild(label);
+    (variant === 'A' ? document.head : document.body).appendChild(label);
     label.click();
     label.remove();
   },
@@ -105,7 +107,8 @@ if ('serviceWorker' in navigator) {
 // ---------- 2. 진동 ----------
 $('vibrate-support').textContent = navigator.vibrate ? '지원' : '미지원';
 $('btn-vibrate').addEventListener('click', () => haptic.standard());
-$('btn-switch').addEventListener('click', () => haptic.iosSwitch());
+$('btn-switch').addEventListener('click', () => haptic.iosSwitch('A'));
+$('btn-switch-b').addEventListener('click', () => haptic.iosSwitch('B'));
 
 // ---------- 3. 블록 끌기·스냅 ----------
 (() => {

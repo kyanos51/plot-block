@@ -37,8 +37,12 @@
       <h2>2. 진동</h2>
       <div class="row">
         <button class="btn" id="btn-vibrate">표준 진동</button>
-        <button class="btn" id="btn-switch">우회 진동</button>
+        <button class="btn" id="btn-switch">우회 진동 A</button>
+        <button class="btn" id="btn-switch-b">우회 진동 B</button>
       </div>
+      <label class="native-switch">
+        <input type="checkbox" switch id="native-switch"> iOS 기본 스위치 (직접 눌러 보기)
+      </label>
       <p class="hint">표준 진동: <span id="vibrate-support">-</span><br>
         우회 진동은 iOS 18 이후 동작한다고 알려진 방식입니다 (미검증). 3번 드래그 테스트에서 칸을 지날 때도 진동이 나는지 확인해 주세요.</p>
       <div class="judge"></div>
