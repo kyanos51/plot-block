@@ -198,8 +198,8 @@ export function initPop(app) {
           fx.burst(b.cx, b.cy, color, n);
           if (tier !== 'base') fx.sparkle(b.cx, b.cy, tier === 'B' ? 8 : 5, { glow: 8 });
           if (b.block.stage === 2) fx.ring(b.cx, b.cy, GOLD, 44, 3.5, 26);
-          // 3개 이상 연결: 마지막 블록에서 금색 원과 반짝이가 퍼짐 (모든 단계 공통)
-          if (n >= 3 && i === n - 1) {
+          // 마지막 블록에서 금색 원과 반짝이가 퍼짐 (연결 개수·단계 공통)
+          if (i === n - 1) {
             fx.ring(b.cx, b.cy, GOLD, 80 + n * 14, 4.5, 40, 0.75);
             fx.sparkle(b.cx, b.cy, 12 + n * 3, { spread: 1.4, glow: 8 });
           }
