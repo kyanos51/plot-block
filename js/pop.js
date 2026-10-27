@@ -1,5 +1,5 @@
 // Phase 3: 터뜨리기 (같은 색 블록을 그어서 잇고, 놓으면 터짐)
-import { createFx, GOLD, NAVY, STARLIGHT } from './fx.js';
+import { createFx, GOLD, NAVY } from './fx.js';
 
 const MAX_CHAIN = 5;
 const LONG_PRESS_MS = 500;
@@ -212,14 +212,11 @@ export function initPop(app) {
         fx.sparkle(cx, cy, 16 + n * 4, { spread: 1.5, glow: 8 });
       }
       if (tier === 'B') {
-        // 밤하늘: 남색 안개가 퍼지고, 그 속에서 남색·금색 별이 반짝임
+        // 밤하늘: 금색 원과 금색·남색 반짝이
         const far = Math.max(window.innerWidth, window.innerHeight);
-        fx.mist(cx, cy, 7, far * 0.45);
         fx.ring(cx, cy, GOLD, far * 0.55, 5, 60, 0.6);
-        fx.ring(cx, cy, STARLIGHT, 170, 4, 44, 0.7);
         fx.sparkle(cx, cy, 34, { spread: 2.2, glow: 9, life: [60, 100] });
         fx.sparkle(cx, cy, 46, { color: NAVY, spread: 2.6, glow: 0, size: [2.5, 5.5], life: [80, 130], drag: 0.975, alpha: 0.75, delay: 20 });
-        fx.sparkle(cx, cy, 14, { color: STARLIGHT, spread: 2, glow: 6, life: [70, 110], delay: 30 });
       }
     }, allPopped);
 

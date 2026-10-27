@@ -4,7 +4,7 @@ import { initPop } from './pop.js';
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r6';
+const VERSION = 'r7';
 
 // ---------- 상태 ----------
 const SLOTS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];

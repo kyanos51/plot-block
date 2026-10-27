@@ -29,8 +29,6 @@ export function createFx(canvas) {
   function loop() {
     ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
     parts = parts.filter((p) => p.life < p.max + p.delay);
-    // 안개를 먼저 깔고 그 위에 별을 그림
-    parts.sort((a, b) => (a.type === 'mist' ? -1 : 0) - (b.type === 'mist' ? -1 : 0));
     for (const p of parts) {
       p.life++;
       if (p.life <= p.delay) continue;
@@ -75,17 +73,6 @@ export function createFx(canvas) {
       ctx.beginPath();
       ctx.arc(0, 0, r, 0, Math.PI * 2);
       ctx.stroke();
-    } else if (p.type === 'mist') {
-      // 안개: 부드러운 원형 그라데이션이 커지며 옅어짐
-      const r = p.r0 + (p.r1 - p.r0) * (1 - (1 - t) ** 2);
-      const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-      grad.addColorStop(0, p.color);
-      grad.addColorStop(1, p.color.replace(/[\d.]+\)$/, '0)')); // 회색 번짐 방지: 같은 색의 투명으로
-      ctx.globalAlpha = p.alpha * Math.sin(Math.PI * t);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(0, 0, r, 0, Math.PI * 2);
-      ctx.fill();
     }
     ctx.restore();
   }
@@ -146,19 +133,6 @@ export function createFx(canvas) {
     },
     ring(x, y, color, r1, width = 5, max = 34, alpha = 0.85) {
       add({ type: 'ring', x, y, color, r0: 6, r1, width, alpha, vx: 0, vy: 0, max });
-    },
-    // 남색 안개: 여러 겹의 옅은 덩어리가 천천히 퍼짐
-    mist(x, y, count, radius) {
-      for (let i = 0; i < count; i++) {
-        const a = rand(0, Math.PI * 2);
-        const v = rand(0.3, 1.1);
-        add({
-          type: 'mist', x: x + rand(-20, 20), y: y + rand(-20, 20), color: 'rgba(58, 70, 112, 1)',
-          vx: Math.cos(a) * v, vy: Math.sin(a) * v, drag: 0.99,
-          r0: radius * 0.2, r1: radius * rand(0.7, 1.1), alpha: rand(0.06, 0.1),
-          max: Math.round(rand(90, 130)), delay: Math.round(rand(0, 12)),
-        });
-      }
     },
   };
 }
