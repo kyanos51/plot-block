@@ -11,85 +11,23 @@
   <title>플롯 블록</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/icon-180.png">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-  <header class="top">
-    <h1>플롯 블록 <small>Phase 0 기기 테스트</small></h1>
+  <header class="appbar">
+    <input class="search" placeholder="화수 검색" inputmode="numeric" id="search">
+    <button class="bar-btn" id="btn-undo" hidden disabled>되돌리기</button>
+    <button class="bar-btn" id="btn-edit">편집</button>
+    <button class="bar-btn" data-soon>글</button>
+    <button class="bar-btn" data-soon>터뜨리기</button>
   </header>
 
-  <main>
-    <!-- 1. 설치 상태 -->
-    <section class="card" data-test="install">
-      <h2>1. 설치·저장 상태</h2>
-      <dl class="info">
-        <dt>홈 화면 앱으로 실행</dt><dd id="standalone">-</dd>
-        <dt>실행 횟수 (저장 유지 확인)</dt><dd id="launches">-</dd>
-        <dt>영구 저장소</dt><dd id="persist">-</dd>
-        <dt>오프라인 준비</dt><dd id="sw">-</dd>
-      </dl>
-      <p class="hint">홈 화면 앱으로 실행한 뒤 앱을 완전히 닫았다가 다시 열면 실행 횟수가 늘어나야 합니다.</p>
-      <div class="judge"></div>
-    </section>
+  <main class="timeline" id="timeline"></main>
 
-    <!-- 2. 진동 -->
-    <section class="card" data-test="haptic">
-      <h2>2. 진동</h2>
-      <div class="row">
-        <button class="btn" id="btn-vibrate">표준 진동</button>
-        <button class="btn" id="btn-switch">우회 진동 A</button>
-        <button class="btn" id="btn-switch-b">우회 진동 B</button>
-      </div>
-      <label class="native-switch">
-        <input type="checkbox" switch id="native-switch"> iOS 기본 스위치 (직접 눌러 보기)
-      </label>
-      <p class="hint">표준 진동: <span id="vibrate-support">-</span><br>
-        우회 진동은 iOS 18 이후 동작한다고 알려진 방식입니다 (미검증). 3번 드래그 테스트에서 칸을 지날 때도 진동이 나는지 확인해 주세요.</p>
-      <div class="judge"></div>
-    </section>
+  <div class="tray" id="tray"></div>
+  <div class="drag-layer" id="drag-layer"></div>
+  <div class="toast" id="toast"></div>
 
-    <!-- 3. 드래그·스냅 -->
-    <section class="card" data-test="drag">
-      <h2>3. 블록 끌기·스냅</h2>
-      <div class="sheet" id="drag-sheet"></div>
-      <p class="hint">블록을 끌어 다른 칸에 놓아 보세요. 다른 블록 위에 놓으면 튕겨 돌아옵니다.<br>
-        프레임: <span id="fps">-</span></p>
-      <div class="judge"></div>
-    </section>
-
-    <!-- 4. 길게 누르기 -->
-    <section class="card" data-test="longpress">
-      <h2>4. 길게 누르기</h2>
-      <div class="row center">
-        <div class="block solo" id="lp-block" style="--c:#FFB7C5"></div>
-        <p class="hint">블록을 0.5초간 눌러 보세요.<br>감지 횟수: <b id="lp-count">0</b></p>
-      </div>
-      <p class="hint">확인할 점: 확대경, 텍스트 선택, 복사 메뉴, 이미지 저장 메뉴가 뜨지 않아야 합니다.</p>
-      <div class="judge"></div>
-    </section>
-
-    <!-- 5. 긋기 vs 스크롤 -->
-    <section class="card" data-test="swipe">
-      <h2>5. 긋기와 스크롤 구분</h2>
-      <div class="scrollbox" id="swipe-box">
-        <div class="scrollinner" id="swipe-inner">
-          <svg id="swipe-svg"></svg>
-        </div>
-      </div>
-      <p class="hint">블록 위에서 시작해 그으면 선이 그려지고, 빈 곳에서 시작하면 상자가 스크롤되어야 합니다.</p>
-      <div class="judge"></div>
-    </section>
-
-    <!-- 결과 -->
-    <section class="card">
-      <h2>결과 보내기</h2>
-      <p class="hint">각 항목에 O/X를 고른 뒤 복사해서 대화창에 붙여 넣어 주세요.</p>
-      <textarea id="memo" placeholder="추가로 느낀 점 (선택)"></textarea>
-      <button class="btn wide" id="btn-copy">결과 복사</button>
-      <p class="hint" id="copy-msg"></p>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

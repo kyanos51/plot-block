@@ -96,7 +96,7 @@ countLaunch();
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker
-    .register('sw.js')
+    .register('../sw.js')
     .then(() => navigator.serviceWorker.ready)
     .then(() => ($('sw').textContent = '완료'))
     .catch((err) => ($('sw').textContent = `실패 (${err && err.name})`));
