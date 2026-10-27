@@ -84,19 +84,6 @@ body:not(.editing):not(.pop-off) .grid .block { touch-action: none; }
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.95), 0 6px 14px rgba(60, 50, 30, 0.18), inset 0 -3px 0 rgba(0, 0, 0, 0.08);
 }
 
-/* 테스트용 완성도 표시 (실제 앱에서는 겉으로 표시하지 않음) */
-body.stage-test .grid .block[data-stage="1"]::after,
-body.stage-test .grid .block[data-stage="2"]::after {
-  position: absolute; top: 2px; right: 4px; font-size: 10px; color: rgba(40, 36, 30, 0.6);
-}
-body.stage-test .grid .block[data-stage="1"]::after { content: "검토"; font-size: 8px; }
-body.stage-test .grid .block[data-stage="2"]::after { content: "★"; color: #C9962E; }
-.stage-test-btn {
-  display: block; margin: 18px auto 0; padding: 8px 14px; border: 0; border-radius: 99px;
-  background: rgba(0, 0, 0, 0.05); font-size: 12px; color: var(--sub);
-}
-body.stage-test .stage-test-btn { background: var(--ink); color: var(--bg); }
-
 /* ---------- 터뜨리기 연출 ---------- */
 .link-svg, .fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .link-svg { z-index: 24; overflow: visible; }
@@ -123,6 +110,8 @@ body.edge .block { box-shadow: inset 0 0 0 1px rgba(60, 45, 30, 0.14), inset 0 -
 }
 .ghost.show { opacity: 0.38; }
 .ghost.bad { background: transparent; opacity: 1; box-shadow: inset 0 0 0 2px var(--danger); }
+/* 다른 색 블록 위: 색 바꾸기 표시 */
+.ghost.recolor { z-index: 3; background: transparent; opacity: 1; box-shadow: 0 0 0 3px var(--c), 0 0 0 5px #fff; }
 
 /* ---------- 끌기 레이어 ---------- */
 .drag-layer { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
@@ -186,3 +175,82 @@ body.desktop .timeline {
 }
 body.desktop .sheet { flex: none; padding: 0 14px; border-bottom: 0; border-right: 1px solid var(--line); }
 body.desktop .add-sheet { flex: none; width: 120px; margin: 0 0 0 14px; align-self: stretch; }
+
+/* ---------- 테스트용 초기화 ---------- */
+.reset-btn {
+  display: block; margin: 18px auto 0; padding: 8px 14px; border: 0; border-radius: 99px;
+  background: transparent; font-size: 11px; color: var(--sub); text-decoration: underline;
+}
+
+/* ---------- 색 슬롯 패널 ---------- */
+.palette {
+  position: fixed; z-index: 35; left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 92px);
+  width: min(340px, calc(100vw - 32px));
+  padding: 14px; border-radius: 18px;
+  background: rgba(255, 253, 248, 0.98);
+  box-shadow: 0 10px 30px rgba(60, 50, 30, 0.2);
+  transform: translate(-50%, 0);
+}
+.palette[hidden] { display: none; }
+.palette-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; }
+.palette-head button { border: 0; background: transparent; font-size: 13px; color: var(--sub); }
+.prow { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.pchip {
+  position: relative; flex: none; width: 40px; height: 40px; border-radius: 9px; overflow: hidden;
+  background: var(--c); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+}
+.pchip input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0; }
+.pmean { flex: 1; min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pmean i { color: var(--sub); font-style: normal; }
+.preset { flex: none; border: 0; border-radius: 8px; padding: 6px 10px; background: rgba(0, 0, 0, 0.05); font-size: 12px; }
+.preset:disabled { opacity: 0.35; }
+.palette-hint { margin: 8px 0 0; font-size: 11px; line-height: 1.5; color: var(--sub); }
+
+/* ---------- 세부 메모 화면 ---------- */
+html.memo-open, html.memo-open body { overflow: hidden; }
+.memo {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+}
+.memo[hidden] { display: none; }
+.memo-head {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  padding: calc(env(safe-area-inset-top) + 8px) 16px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.memo-back, .memo-copy {
+  flex: none; height: 34px; padding: 0 10px; border: 0; border-radius: 10px;
+  background: rgba(0, 0, 0, 0.045); font-size: 13px; font-weight: 600;
+}
+.memo-chip { flex: none; width: 22px; height: 22px; border-radius: 6px; background: var(--c); }
+.memo-meaning {
+  flex: 1; min-width: 0; height: 34px; border: 0; border-radius: 10px; padding: 0 10px;
+  background: rgba(0, 0, 0, 0.045); font: inherit; font-size: 16px; font-weight: 700; color: var(--ink);
+}
+.memo-list {
+  flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: 12px 16px calc(env(safe-area-inset-bottom) + 40vh);
+}
+.memo-card {
+  margin: 0 auto 12px; max-width: 640px; padding: 12px 14px; border-radius: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: inset 5px 0 0 var(--c);
+}
+.memo-card-top { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.memo-ep { font-size: 12px; font-weight: 700; color: var(--sub); }
+.memo-sum { font-size: 12px; color: var(--ink); }
+.memo-title, .memo-body {
+  display: block; width: 100%; border: 0; background: transparent; color: var(--ink);
+  font: inherit; font-size: 16px; padding: 4px 0;
+}
+.memo-title { font-weight: 700; border-bottom: 1px solid var(--line); }
+.memo-body { resize: none; min-height: 72px; line-height: 1.55; overflow: hidden; }
+.memo-title:focus, .memo-body:focus { outline: none; }
+.memo-stage { display: flex; gap: 6px; margin-top: 8px; }
+.memo-stage button {
+  flex: 1; padding: 6px 0; border: 1px solid var(--line); border-radius: 8px;
+  background: transparent; font-size: 12px; color: var(--sub);
+}
+.memo-stage button.on { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 700; }

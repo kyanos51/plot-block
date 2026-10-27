@@ -6,7 +6,7 @@ const LONG_PRESS_MS = 500;
 const MOVE_SLOP = 8; // 이만큼 움직이면 길게 누르기 대신 긋기로 판단
 
 export function initPop(app) {
-  const { state, SLOTS, toast, findBlock } = app;
+  const { state, color, toast, findBlock, openMemo } = app;
   const $ = (id) => document.getElementById(id);
   const fx = createFx($('fx'));
   const svg = $('link-svg');
@@ -16,7 +16,7 @@ export function initPop(app) {
 
   // ---------- 긋기 시작 ----------
   $('timeline').addEventListener('pointerdown', (e) => {
-    if (state.editing || state.stageTest || busy || g) return;
+    if (state.editing || busy || g) return;
     const el = e.target.closest('.grid .block');
     if (!el) return;
 
@@ -41,8 +41,7 @@ export function initPop(app) {
     const el = g.startEl;
     end();
     el.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.92)' }, { transform: 'scale(1.04)' }, { transform: 'scale(1)' }],
-      { duration: 260, easing: 'ease-out' });
-    toast('세부 메모는 Phase 4에서 만듭니다');
+      { duration: 200, easing: 'ease-out' }).finished.then(() => openMemo(el.dataset.id)).catch(() => {});
   }
 
   function beginSwipe() {
@@ -98,11 +97,11 @@ export function initPop(app) {
     $('chain-count').textContent = n >= MAX_CHAIN ? `${n} MAX` : `${n}`;
   }
 
-  function drawLine(color) {
+  function drawLine(stroke) {
     const pts = g.chain.map((b) => `${b.cx},${b.cy}`);
     if (!g.failed) pts.push(`${g.last.x},${g.last.y}`);
     svg.innerHTML = `
-      <polyline points="${pts.join(' ')}" fill="none" stroke="${color || shade(SLOTS[g.slot], -0.18)}"
+      <polyline points="${pts.join(' ')}" fill="none" stroke="${stroke || shade(color(g.slot), -0.18)}"
         stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
       <polyline points="${pts.join(' ')}" fill="none" stroke="#fff" stroke-width="3"
         stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
@@ -179,7 +178,7 @@ export function initPop(app) {
     const n = chain.length;
     const done = chain.filter((b) => b.block.stage === 2).length;
     const tier = done === n ? 'B' : done > 0 ? 'A' : 'base';
-    const color = SLOTS[chain[0].block.slot];
+    const blockColor = color(chain[0].block.slot);
     const GAP_MS = 85;
 
     svg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160 + n * GAP_MS, fill: 'forwards' })
@@ -195,7 +194,7 @@ export function initPop(app) {
           { transform: 'scale(1.35)', opacity: 0 },
         ], { duration: 190, easing: 'ease-in', fill: 'forwards' });
         setTimeout(() => {
-          fx.burst(b.cx, b.cy, color, n);
+          fx.burst(b.cx, b.cy, blockColor, n);
           if (tier !== 'base') fx.sparkle(b.cx, b.cy, tier === 'B' ? 8 : 5, { glow: 8 });
           if (b.block.stage === 2) fx.ring(b.cx, b.cy, GOLD, 44, 3.5, 26);
           // 마지막 블록에서 금색 원과 반짝이가 퍼짐 (연결 개수·단계 공통)

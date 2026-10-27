@@ -1,65 +1,85 @@
-// 프로토타입: 블록 쌓기(Phase 2)와 터뜨리기(Phase 3) 조작감 검증 (데이터 저장 없음)
+// 플롯 블록: 타임라인 시트, 블록 쌓기, 저장
 import { initPop } from './pop.js';
+import { initMemo } from './memo.js';
+import { initPalette } from './palette.js';
+import { loadDoc, saveDoc, clearDoc } from './store.js';
 
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r9';
+const VERSION = 'r10';
 
-// ---------- 상태 ----------
-const SLOTS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
+// ---------- 문서 ----------
+const PRESETS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
 const COLS = 5;
 const ROWS = 3;
 
-let nextId = 100;
-const uid = () => `b${nextId++}`;
+const uid = (p) => `${p}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+// 처음 실행할 때만 쓰는 예시 배치
+function sampleDoc() {
+  const b = (slot, col, row, summary, stage = 0) =>
+    ({ id: uid('b'), slot, col, row, summary, stage, memoTitle: '', body: '' });
+  return {
+    version: 1,
+    slots: PRESETS.map((color) => ({ color, meaning: '' })),
+    sheets: [
+      { id: uid('s'), from: 1, to: 17, blocks: [b(0, 0, 1, '첫 만남', 2), b(2, 2, 1, '복선', 2)] },
+      { id: uid('s'), from: 18, blocks: [b(1, 1, 1, '배신'), b(0, 3, 1, '재회', 2)] },
+      { id: uid('s'), from: 19, to: 30, blocks: [b(3, 0, 1, '수련'), b(2, 2, 1, '회수'), b(0, 4, 1, '고백', 2)] },
+      { id: uid('s'), from: 31, to: 35, blocks: [b(2, 1, 1, '진실', 1)] },
+      { id: uid('s'), from: 36, to: 50, blocks: [] },
+    ],
+  };
+}
 
 const state = {
+  doc: null,
+  loadFailed: false, // 읽기에 실패하면 기존 데이터를 덮어쓰지 않도록 저장을 멈춤
   editing: false,
   popOff: false,
-  stageTest: false, // 테스트용: 탭해서 완성도 지정
-  sheets: [
-    { id: 's1', from: 1, to: 17, blocks: [
-      { id: 'b1', slot: 0, col: 0, row: 1, title: '첫 만남', stage: 2 },
-      { id: 'b2', slot: 2, col: 2, row: 1, title: '복선', stage: 2 },
-    ] },
-    { id: 's2', from: 18, blocks: [
-      { id: 'b3', slot: 1, col: 1, row: 1, title: '배신' },
-      { id: 'b4', slot: 0, col: 3, row: 1, title: '재회', stage: 2 },
-    ] },
-    { id: 's3', from: 19, to: 30, blocks: [
-      { id: 'b5', slot: 3, col: 0, row: 1, title: '수련' },
-      { id: 'b6', slot: 2, col: 2, row: 1, title: '회수' },
-      { id: 'b7', slot: 0, col: 4, row: 1, title: '고백', stage: 2 },
-    ] },
-    { id: 's4', from: 31, to: 35, blocks: [
-      { id: 'b8', slot: 2, col: 1, row: 1, title: '진실', stage: 1 },
-    ] },
-    { id: 's5', from: 36, to: 50, blocks: [] },
-  ],
 };
 
-// 되돌리기: 변경 직전 상태를 최대 20개 보관 (앱을 닫으면 사라짐)
+// ---------- 자동 저장 ----------
+let saveTimer = null;
+function changed() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flush, 300);
+}
+function flush() {
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  if (state.loadFailed) return toast('저장소를 읽지 못해 저장하지 않습니다. 앱을 다시 열어 주세요');
+  saveDoc(state.doc).catch(() => toast('저장에 실패했습니다'));
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && saveTimer) flush();
+});
+
+// ---------- 되돌리기: 변경 직전 상태를 최대 20개 보관 (앱을 닫으면 사라짐) ----------
 const history = [];
 function snapshot() {
-  history.push(JSON.stringify(state.sheets));
+  history.push(JSON.stringify(state.doc));
   if (history.length > 20) history.shift();
   updateUndo();
 }
 function undo() {
   if (!history.length) return;
-  state.sheets = JSON.parse(history.pop());
+  state.doc = JSON.parse(history.pop());
+  renderTray();
   render();
   updateUndo();
+  changed();
   toast('되돌렸습니다');
 }
 function updateUndo() {
   $('btn-undo').disabled = history.length === 0;
 }
 
-const findSheet = (id) => state.sheets.find((s) => s.id === id);
+const color = (slot) => state.doc.slots[slot].color;
+const findSheet = (id) => state.doc.sheets.find((s) => s.id === id);
 function findBlock(id) {
-  for (const s of state.sheets) {
+  for (const s of state.doc.sheets) {
     const b = s.blocks.find((x) => x.id === id);
     if (b) return { sheet: s, block: b };
   }
@@ -94,53 +114,65 @@ function sheetLabel(s) {
   return s.to && s.to !== s.from ? `${s.from}~${s.to}화` : `${s.from}화`;
 }
 
+const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
 function render() {
   L = layout();
   document.documentElement.style.setProperty('--cell', `${L.cell}px`);
   document.body.classList.toggle('desktop', L.desk);
   document.body.classList.toggle('editing', state.editing);
-  document.body.classList.toggle('stage-test', state.stageTest);
 
   const w = (L.desk ? ROWS : COLS) * L.step - L.gap;
   const h = (L.desk ? COLS : ROWS) * L.step - L.gap;
 
-  $('timeline').innerHTML = state.sheets.map((s) => `
+  $('timeline').innerHTML = state.doc.sheets.map((s) => `
     <section class="sheet" data-sheet="${s.id}">
       <div class="label">${sheetLabel(s)}</div>
       <div class="grid" style="width:${w}px;height:${h}px">
         <div class="ghost"></div>
         ${s.blocks.map((b) => {
           const [x, y] = cellToXY(b.col, b.row, L);
-          return `<div class="block" data-id="${b.id}" data-stage="${b.stage || 0}" style="--c:${SLOTS[b.slot]};left:${x}px;top:${y}px">${b.title}</div>`;
+          return `<div class="block" data-id="${b.id}" style="--c:${color(b.slot)};left:${x}px;top:${y}px">${esc(b.summary || '')}</div>`;
         }).join('')}
       </div>
     </section>`).join('') + `<button class="add-sheet" id="add-sheet">+ 시트 추가</button>
-    <button class="stage-test-btn" id="stage-test">${state.stageTest ? '완성도 지정 끝내기' : '완성도 지정 (테스트용)'}</button>
+    <button class="reset-btn" id="reset">모든 데이터 지우기 (테스트용)</button>
     <p class="version">프로토타입 ${VERSION}</p>`;
 
   $('add-sheet').addEventListener('click', addSheet);
-  $('stage-test').addEventListener('click', () => {
-    state.stageTest = !state.stageTest;
-    if (state.stageTest) toast('블록을 탭하면 설계 → 검토 → 완성 순으로 바뀝니다');
-    render();
-  });
+  $('reset').addEventListener('click', resetAll);
 }
 
 function renderTray() {
   $('tray').innerHTML = `
-    ${SLOTS.map((c, i) => `<div class="block slot" data-slot="${i}" style="--c:${c}"></div>`).join('')}
-    <button class="add" data-soon aria-label="색 변경">+</button>
+    ${state.doc.slots.map((s, i) => `<div class="block slot" data-slot="${i}" style="--c:${s.color}"></div>`).join('')}
+    <button class="add" id="btn-palette" aria-label="색 변경">+</button>
     <div class="trash">삭제</div>`;
 }
 
 function addSheet() {
   snapshot();
-  const last = state.sheets[state.sheets.length - 1];
+  const sheets = state.doc.sheets;
+  const last = sheets[sheets.length - 1];
   const from = last ? (last.to || last.from) + 1 : 1;
-  state.sheets.push({ id: `s${nextId++}`, from, blocks: [] });
+  sheets.push({ id: uid('s'), from, blocks: [] });
   render();
-  const el = document.querySelector(`[data-sheet="${state.sheets[state.sheets.length - 1].id}"]`);
+  changed();
+  const el = document.querySelector(`[data-sheet="${sheets[sheets.length - 1].id}"]`);
   el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+}
+
+async function resetAll() {
+  if (!confirm('모든 시트와 메모를 지우고 처음 예시로 되돌립니다. 계속할까요?')) return;
+  await clearDoc();
+  state.doc = sampleDoc();
+  state.loadFailed = false;
+  history.length = 0;
+  updateUndo();
+  renderTray();
+  render();
+  flush();
+  toast('초기화했습니다');
 }
 
 // ---------- 토스트 ----------
@@ -150,14 +182,14 @@ function toast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 1400);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
 }
 
 // ---------- 끌기 ----------
 let drag = null;
 
 function startDrag(e, opts) {
-  const { el, kind, slot, title, id } = opts;
+  const { el, kind, slot, text, id } = opts;
   const r = el.getBoundingClientRect();
   const size = L.cell;
 
@@ -167,7 +199,7 @@ function startDrag(e, opts) {
 
   const wrap = document.createElement('div');
   wrap.className = 'drag picking';
-  wrap.innerHTML = `<div class="block" style="--c:${SLOTS[slot]};width:${size}px;height:${size}px">${title}</div>`;
+  wrap.innerHTML = `<div class="block" style="--c:${color(slot)};width:${size}px;height:${size}px">${esc(text)}</div>`;
   $('drag-layer').appendChild(wrap);
   const x = kind === 'move' ? r.left : e.clientX - offX;
   const y = kind === 'move' ? r.top : e.clientY - offY;
@@ -178,7 +210,7 @@ function startDrag(e, opts) {
   if (kind === 'move') el.classList.add('hidden');
 
   drag = {
-    kind, id, slot, title, el, wrap, offX, offY, x, y,
+    kind, id, slot, el, wrap, offX, offY, x, y,
     px: e.clientX, py: e.clientY, t: performance.now(),
     vx: 0, rot: 0, target: null, cellKey: '', raf: 0, edgeSince: 0,
   };
@@ -287,7 +319,11 @@ function updateTarget() {
       col = Math.max(0, Math.min(COLS - 1, col));
       row = Math.max(0, Math.min(ROWS - 1, row));
       const sheet = findSheet(sheetEl.dataset.sheet);
-      target = { sheet, grid, col, row, ok: canPlace(sheet, col, row) };
+      const self = drag.kind === 'move' ? drag.id : null;
+      const occupant = sheet.blocks.find((b) => b.id !== self && b.col === col && b.row === row);
+      // 트레이 색을 다른 색 블록 위에 놓으면 그 블록의 색을 바꿈
+      const recolor = drag.kind === 'new' && occupant && occupant.slot !== drag.slot ? occupant : null;
+      target = { sheet, grid, col, row, recolor, ok: !occupant || !!recolor };
       break;
     }
   }
@@ -300,25 +336,20 @@ function updateTarget() {
   const key = target && !target.trash ? `${target.sheet.id}:${target.col}:${target.row}` : '';
   if (key === drag.cellKey) return;
   drag.cellKey = key;
-  if (prev && prev.grid) prev.grid.querySelector('.ghost').classList.remove('show', 'bad');
+  if (prev && prev.grid) prev.grid.querySelector('.ghost').classList.remove('show', 'bad', 'recolor');
   if (!key) return;
   const ghost = target.grid.querySelector('.ghost');
   const [gx, gy] = cellToXY(target.col, target.row, L);
   ghost.style.left = `${gx}px`;
   ghost.style.top = `${gy}px`;
-  ghost.style.setProperty('--c', SLOTS[drag.slot]);
+  ghost.style.setProperty('--c', color(drag.slot));
   ghost.classList.add('show');
   ghost.classList.toggle('bad', !target.ok);
+  ghost.classList.toggle('recolor', !!target.recolor);
   ghost.animate(
     [{ transform: 'scale(0.78)' }, { transform: 'scale(1.06)', offset: 0.6 }, { transform: 'scale(1)' }],
     { duration: 180, easing: 'ease-out' }
   );
-}
-
-function canPlace(sheet, col, row) {
-  const self = drag.kind === 'move' ? drag.id : null;
-  if (sheet.blocks.some((b) => b.id !== self && b.col === col && b.row === row)) return false;
-  return true;
 }
 
 function onUp() {
@@ -341,10 +372,23 @@ function onUp() {
       found.sheet.blocks = found.sheet.blocks.filter((b) => b.id !== d.id);
       flyAway(d, true);
       render();
+      changed();
       wiggle($('tray'));
     } else {
       flyAway(d, false);
     }
+    return;
+  }
+
+  if (t && t.recolor) {
+    snapshot();
+    t.recolor.slot = d.slot;
+    d.wrap.remove();
+    render();
+    changed();
+    const el = document.querySelector(`.grid .block[data-id="${t.recolor.id}"]`);
+    el.animate([{ transform: 'scale(1.2)' }, { transform: 'scale(0.92)' }, { transform: 'scale(1)' }],
+      { duration: 320, easing: 'ease-out' });
     return;
   }
 
@@ -359,11 +403,12 @@ function onUp() {
       b.row = t.row;
       t.sheet.blocks.push(b);
     } else {
-      id = uid();
-      t.sheet.blocks.push({ id, slot: d.slot, col: t.col, row: t.row, title: '', stage: 0 });
+      id = uid('b');
+      t.sheet.blocks.push({ id, slot: d.slot, col: t.col, row: t.row, summary: '', stage: 0, memoTitle: '', body: '' });
     }
     d.wrap.remove();
     render();
+    changed();
     land(id, d);
     return;
   }
@@ -453,7 +498,7 @@ $('timeline').addEventListener('pointerdown', (e) => {
   if (!el) return;
   e.preventDefault();
   const { block } = findBlock(el.dataset.id);
-  startDrag(e, { el, kind: 'move', id: block.id, slot: block.slot, title: block.title });
+  startDrag(e, { el, kind: 'move', id: block.id, slot: block.slot, text: block.summary || '' });
 });
 
 $('tray').addEventListener('pointerdown', (e) => {
@@ -461,18 +506,7 @@ $('tray').addEventListener('pointerdown', (e) => {
   const el = e.target.closest('.slot');
   if (!el) return;
   e.preventDefault();
-  startDrag(e, { el, kind: 'new', slot: Number(el.dataset.slot), title: '' });
-});
-
-// 테스트용 완성도 지정: 탭할 때마다 설계(0) → 검토(1) → 완성(2)
-$('timeline').addEventListener('click', (e) => {
-  if (!state.stageTest || state.editing) return;
-  const el = e.target.closest('.grid .block');
-  if (!el) return;
-  const { block } = findBlock(el.dataset.id);
-  block.stage = ((block.stage || 0) + 1) % 3;
-  toast(['설계', '검토', '완성'][block.stage]);
-  render();
+  startDrag(e, { el, kind: 'new', slot: Number(el.dataset.slot), text: '' });
 });
 
 document.addEventListener('contextmenu', (e) => {
@@ -499,9 +533,26 @@ window.addEventListener('resize', () => {
 });
 
 // ---------- 시작 ----------
-renderTray();
-render();
-updateUndo();
-initPop({ state, SLOTS, toast, findBlock });
+async function start() {
+  try {
+    state.doc = await loadDoc();
+  } catch {
+    state.loadFailed = true;
+    toast('저장된 데이터를 읽지 못했습니다');
+  }
+  if (!state.doc) {
+    state.doc = sampleDoc();
+    flush();
+  }
+  renderTray();
+  render();
+  updateUndo();
+
+  const app = { state, color, toast, findBlock, render, renderTray, changed, snapshot, sheetLabel, esc, PRESETS };
+  const memo = initMemo(app);
+  initPop({ ...app, openMemo: memo.open });
+  initPalette(app);
+}
+start();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});

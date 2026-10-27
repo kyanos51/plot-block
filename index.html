@@ -29,6 +29,22 @@
   <canvas class="fx" id="fx"></canvas>
   <div class="chain-count" id="chain-count"></div>
   <div class="drag-layer" id="drag-layer"></div>
+  <div class="palette" id="palette" hidden>
+    <div class="palette-head"><b>색 슬롯</b><button id="palette-close">닫기</button></div>
+    <div id="palette-rows"></div>
+    <p class="palette-hint">색을 누르면 바꿀 수 있고, 그 색을 쓰는 블록이 모두 함께 바뀝니다. 트레이 색을 다른 색 블록 위에 놓으면 그 블록만 색이 바뀝니다.</p>
+  </div>
+
+  <section class="memo" id="memo" hidden>
+    <header class="memo-head">
+      <button class="memo-back" id="memo-back">‹ 시트</button>
+      <span class="memo-chip"></span>
+      <input class="memo-meaning" id="memo-meaning" placeholder="색 의미 (예: 복선)">
+      <button class="memo-copy" id="memo-copy">전체 복사</button>
+    </header>
+    <div class="memo-list" id="memo-list"></div>
+  </section>
+
   <div class="toast" id="toast"></div>
 
   <script type="module" src="js/main.js"></script>
