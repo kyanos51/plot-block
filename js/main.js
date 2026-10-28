@@ -10,7 +10,7 @@ import { loadDoc, saveDoc, clearDoc } from './store.js';
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r24';
+const VERSION = 'r25';
 
 // ---------- 문서 ----------
 const PRESETS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
@@ -90,6 +90,35 @@ function findBlock(id) {
   return null;
 }
 
+// 요약 메모 바깥 위치: 블록의 상하좌우 한 칸 (데이터 좌표 기준)
+const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+const inGrid = (c, r) => c >= 0 && c < COLS && r >= 0 && r < ROWS;
+function noteCell(b) {
+  if (!b.noteDir || !DIRS[b.noteDir]) return null;
+  const [dc, dr] = DIRS[b.noteDir];
+  const col = b.col + dc;
+  const row = b.row + dr;
+  return inGrid(col, row) ? { col, row } : null;
+}
+// 바깥 메모 칸에 블록이 생겼거나 다른 메모와 겹치면 그 메모는 블록 안으로
+function normalizeNotes(sheet) {
+  const used = new Set();
+  for (const b of sheet.blocks) {
+    const c = noteCell(b);
+    if (!b.noteDir) continue;
+    const key = c && `${c.col},${c.row}`;
+    if (!c || used.has(key) || sheet.blocks.some((o) => o.col === c.col && o.row === c.row)) b.noteDir = null;
+    else used.add(key);
+  }
+}
+
+// 색을 흰색 쪽(+) 또는 검은색 쪽(-)으로 섞음
+function mix(hex, amt, alpha = 1) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (c) => Math.round(amt < 0 ? c * (1 + amt) : c + (255 - c) * amt);
+  return `rgba(${f(n >> 16)}, ${f((n >> 8) & 255)}, ${f(n & 255)}, ${alpha})`;
+}
+
 // ---------- 배치 계산 ----------
 const isDesktop = () => window.matchMedia('(min-width: 900px)').matches;
 
@@ -137,13 +166,10 @@ function render() {
         <div class="ghost"></div>
         ${s.blocks.map((b) => {
           const [x, y] = cellToXY(b.col, b.row, L);
-          // 요약 메모는 블록 안(기본) 또는 같은 시트의 빈칸(notePos)에 표시
-          const inside = b.notePos ? '' : esc(b.summary || '');
-          let note = '';
-          if (b.notePos && b.summary) {
-            const [nx, ny] = cellToXY(b.notePos.col, b.notePos.row, L);
-            note = `<div class="note" data-note="${b.id}" style="left:${nx}px;top:${ny}px">${esc(b.summary)}</div>`;
-          }
+          // 요약 메모는 블록 안(기본) 또는 블록 상하좌우의 가로형 말풍선
+          const out = b.summary && noteCell(b);
+          const inside = out ? '' : esc(b.summary || '');
+          const note = out ? noteHTML(s, b, out) : '';
           return `<div class="block" data-id="${b.id}"${b.summary ? '' : ' data-empty'} style="--c:${color(b.slot)};left:${x}px;top:${y}px">${inside}</div>${note}`;
         }).join('')}
       </div>
@@ -153,6 +179,40 @@ function render() {
 
   $('add-sheet').addEventListener('click', addSheet);
   $('reset').addEventListener('click', resetAll);
+}
+
+// 말풍선은 블록 가장자리에 붙고, 블록 쪽으로 꼬리가 나옴. 블록 색으로 물들여 어느 블록의 메모인지 보이게 함
+function noteHTML(sheet, b, cell) {
+  const [bx, by] = cellToXY(b.col, b.row, L);
+  const [nx, ny] = cellToXY(cell.col, cell.row, L);
+  const vx = Math.sign(nx - bx);
+  const vy = Math.sign(ny - by);
+  // 화면 기준으로 옆 칸이 비어 있으면 말풍선을 더 넓게
+  const freeAt = (px, py) => {
+    const c = xyToCell(px, py, L);
+    return px >= 0 && py >= 0 && inGrid(c.col, c.row) && !sheet.blocks.some((o) => o.col === c.col && o.row === c.row);
+  };
+  const GAP = 7;
+  let pos;
+  let maxW;
+  let tail;
+  if (vy) {
+    const wide = freeAt(nx - L.step, ny) && freeAt(nx + L.step, ny);
+    maxW = L.step * (wide ? 1.9 : 1) - L.gap;
+    pos = vy > 0
+      ? `left:${bx + L.cell / 2}px;top:${by + L.cell + GAP}px;transform:translateX(-50%)`
+      : `left:${bx + L.cell / 2}px;top:${by - GAP}px;transform:translate(-50%,-100%)`;
+    tail = vy > 0 ? 'top' : 'bottom';
+  } else {
+    const far = freeAt(nx + vx * L.step, ny);
+    maxW = L.step * (far ? 1.9 : 1) - L.gap - GAP;
+    pos = vx > 0
+      ? `left:${bx + L.cell + GAP}px;top:${by + L.cell / 2}px;transform:translateY(-50%)`
+      : `left:${bx - GAP}px;top:${by + L.cell / 2}px;transform:translate(-100%,-50%)`;
+    tail = vx > 0 ? 'left' : 'right';
+  }
+  const c = color(b.slot);
+  return `<div class="note tail-${tail}" data-note="${b.id}" style="${pos};max-width:${maxW}px;--tint:${mix(c, 0.7)};--edge:${mix(c, -0.15, 0.6)}"><span>${esc(b.summary)}</span></div>`;
 }
 
 function renderTray() {
@@ -407,23 +467,20 @@ function onUp() {
   if (t && t.ok) {
     snapshot();
     let id = d.id;
-    // 놓은 칸에 다른 블록의 바깥 요약 메모가 있으면 그 메모는 자기 블록 안으로 돌아감
-    for (const o of t.sheet.blocks) {
-      if (o.notePos && o.notePos.col === t.col && o.notePos.row === t.row) o.notePos = null;
-    }
     if (d.kind === 'move') {
       const found = findBlock(d.id);
       const b = found.block;
-      // 다른 시트로 옮기면 바깥 메모는 블록 안으로
-      if (found.sheet !== t.sheet) b.notePos = null;
       found.sheet.blocks = found.sheet.blocks.filter((x) => x.id !== d.id);
       b.col = t.col;
       b.row = t.row;
       t.sheet.blocks.push(b);
+      normalizeNotes(found.sheet);
     } else {
       id = uid('b');
       t.sheet.blocks.push({ id, slot: d.slot, col: t.col, row: t.row, summary: '', stage: 0, memoTitle: '', body: '' });
     }
+    // 메모 자리에 블록이 들어왔거나 메모가 시트 밖으로 나가면 그 메모는 블록 안으로
+    normalizeNotes(t.sheet);
     d.wrap.remove();
     render();
     changed();
@@ -569,13 +626,23 @@ async function start() {
     state.doc = sampleDoc();
     flush();
   }
+  // r24의 빈칸 메모 위치(notePos)를 상하좌우 방향으로 바꿈. 붙어 있지 않던 메모는 블록 안으로
+  for (const sh of state.doc.sheets) {
+    for (const b of sh.blocks) {
+      if (!b.notePos) continue;
+      const dir = Object.keys(DIRS).find((k) => b.col + DIRS[k][0] === b.notePos.col && b.row + DIRS[k][1] === b.notePos.row);
+      b.noteDir = dir || null;
+      delete b.notePos;
+    }
+    normalizeNotes(sh);
+  }
   renderTray();
   render();
   updateUndo();
 
   const app = {
     state, color, toast, findBlock, findSheet, render, renderTray, changed, snapshot, sheetLabel, esc, uid, PRESETS,
-    COLS, ROWS, cellToXY, xyToCell, layout: () => L,
+    COLS, ROWS, DIRS, inGrid, cellToXY, xyToCell, mix, layout: () => L,
   };
   initText(app);
   initSheetInfo(app);
