@@ -36,7 +36,7 @@ export function createCombo(fx) {
     el.style.setProperty('--grow', 1 + Math.min(count, 10) * 0.05);
 
     if (first) {
-      num.textContent = count;
+      num.textContent = num.dataset.text = count;
       el.animate([
         { transform: 'translate(-50%, -50%) scale(0.3)', opacity: 0 },
         { transform: 'translate(-50%, -50%) scale(1.18)', opacity: 1, offset: 0.55 },
@@ -52,7 +52,7 @@ export function createCombo(fx) {
         { transform: 'translate(-50%, 0) scale(1)', opacity: 1 },
         { transform: 'translate(-50%, -38px) scale(0.7) rotate(-12deg)', opacity: 0 },
       ], { duration: 300, easing: 'ease-out' }).finished.then(() => old.remove());
-      num.textContent = count;
+      num.textContent = num.dataset.text = count;
       num.animate([
         { transform: 'translateY(24px) scale(1.9) rotate(8deg)', opacity: 0 },
         { transform: 'translateY(-4px) scale(0.82) rotate(-3deg)', opacity: 1, offset: 0.45 },

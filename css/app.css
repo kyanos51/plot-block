@@ -184,13 +184,11 @@ body.desktop .sheet { flex: none; padding: 0 14px; border-bottom: 0; border-righ
 body.desktop .add-sheet { flex: none; width: 120px; margin: 0 0 0 14px; align-self: stretch; }
 
 /* ---------- 콤보 ---------- */
-/* 크림색 글자 + 반투명 브라운 외곽선(파스텔 느낌) + 뒤쪽의 옅은 아이보리 빛으로 시트·블록과 구분 */
+/* 밝은 크림색 글자 + 반투명 브라운 외곽선(파스텔 느낌) + 뒤쪽의 옅은 아이보리 빛으로 시트·블록과 구분 */
 .combo {
   position: fixed; left: 50%; top: 40%; z-index: 28; pointer-events: none;
   display: flex; flex-direction: column; align-items: center;
-  color: #F6DCAE; /* 크림 (블록 프리셋과 같은 색) */
-  -webkit-text-stroke: 3px rgba(138, 102, 80, 0.55); /* 브라운을 반투명으로 */
-  paint-order: stroke fill; /* 외곽선을 글자 바깥쪽에 그려 글자가 가늘어지지 않게 */
+  color: #F2EAE1; /* 밝은 크림 */
   text-shadow: 0 2px 6px rgba(138, 102, 80, 0.15);
   transform: translate(-50%, -50%);
   font-size: calc(16px * var(--grow, 1));
@@ -202,9 +200,15 @@ body.desktop .add-sheet { flex: none; width: 120px; margin: 0 0 0 14px; align-se
 }
 .combo[hidden] { display: none; }
 .combo-num-wrap { position: relative; display: block; }
-.combo-num { display: block; font-size: 3.6em; font-weight: 900; line-height: 1; letter-spacing: -1px; }
+.combo-num { position: relative; display: block; font-size: 3.6em; font-weight: 900; line-height: 1; letter-spacing: -1px; }
 .combo-old { position: absolute; left: 50%; top: 0; }
-.combo-label { margin-top: 2px; font-size: 0.9em; font-weight: 800; letter-spacing: 4px; -webkit-text-stroke-width: 2px; }
+.combo-label { position: relative; margin-top: 3px; font-size: 0.9em; font-weight: 800; letter-spacing: 5px; }
+/* 외곽선은 같은 글자를 뒤에 한 겹 더 깔아 그림: 글자 안쪽에 선이 비치지 않고 바깥 두께만 보임 */
+.combo-num::before, .combo-label::before {
+  content: attr(data-text); position: absolute; left: 0; top: 0; z-index: -1;
+  color: transparent; -webkit-text-stroke: 6px rgba(138, 102, 80, 0.55); /* 바깥으로 3px */
+}
+.combo-label::before { -webkit-text-stroke-width: 4px; }
 
 /* ---------- 테스트용 초기화 ---------- */
 .reset-btn {
