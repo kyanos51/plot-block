@@ -10,7 +10,7 @@ import { loadDoc, saveDoc, clearDoc } from './store.js';
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r25';
+const VERSION = 'r26';
 
 // ---------- 문서 ----------
 const PRESETS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
@@ -204,8 +204,8 @@ function noteHTML(sheet, b, cell) {
       : `left:${bx + L.cell / 2}px;top:${by - GAP}px;transform:translate(-50%,-100%)`;
     tail = vy > 0 ? 'top' : 'bottom';
   } else {
-    const far = freeAt(nx + vx * L.step, ny);
-    maxW = L.step * (far ? 1.9 : 1) - L.gap - GAP;
+    // 양옆 배치는 블록 두 칸 길이까지 (바깥쪽 칸이 막혀 있어도 그 위로 겹쳐 표시)
+    maxW = L.cell * 2 + L.gap - GAP;
     pos = vx > 0
       ? `left:${bx + L.cell + GAP}px;top:${by + L.cell / 2}px;transform:translateY(-50%)`
       : `left:${bx - GAP}px;top:${by + L.cell / 2}px;transform:translate(-100%,-50%)`;
