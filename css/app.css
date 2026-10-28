@@ -194,9 +194,9 @@ body.desktop .add-sheet { flex: none; width: 120px; margin: 0 0 0 14px; align-se
   font-size: calc(16px * var(--grow, 1));
 }
 .combo::before {
-  content: ''; position: absolute; z-index: -1; inset: -22px -34px;
+  content: ''; position: absolute; z-index: -1; inset: -6px -12px; /* 글자 바로 뒤만 살짝 */
   border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 252, 244, 0.92), rgba(255, 252, 244, 0.6) 55%, rgba(255, 252, 244, 0));
+  background: radial-gradient(closest-side, rgba(255, 252, 244, 0.7), rgba(255, 252, 244, 0.3) 60%, rgba(255, 252, 244, 0));
 }
 .combo[hidden] { display: none; }
 .combo-num-wrap { position: relative; display: block; }
