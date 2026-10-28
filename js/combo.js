@@ -25,7 +25,7 @@ export function createCombo(fx) {
     count = 0;
   }
 
-  function show() {
+  function show(prev) {
     const first = el.hidden || hiding;
     if (first) {
       el.getAnimations().forEach((a) => a.cancel());
@@ -74,8 +74,8 @@ export function createCombo(fx) {
     fx.ring(cx, cy, GOLD, 60 + Math.min(count, 10) * 6, 3, 26, 0.7);
     fx.sparkle(cx, cy, 8 + Math.min(count, 10), { spread: 1.3, glow: 8 });
 
-    // 10콤보마다: 콤보 글자 중심에서 큰 금색 원과 반짝이가 화면으로 퍼짐
-    if (count % 10 === 0) {
+    // 10콤보 단위를 넘을 때마다 (여러 칸씩 올라도 놓치지 않게): 콤보 글자 중심에서 큰 금색 원과 반짝이가 퍼짐
+    if (Math.floor(count / 10) > Math.floor(prev / 10)) {
       const far = Math.max(window.innerWidth, window.innerHeight);
       fx.ring(cx, cy, GOLD, far * 0.5, 5, 55, 0.75);
       fx.ring(cx, cy, GOLD, far * 0.3, 3, 48, 0.55, 10);
@@ -111,10 +111,12 @@ export function createCombo(fx) {
     swipeEnd() {
       if (alive) rest();
     },
-    pop(slot) {
+    // 연결 개수 - 1 만큼 콤보가 오름 (2개 → +1, 3개 → +2, 5개 → +4)
+    pop(slot, linked) {
       if (alive && slot !== lastSlot) {
-        count++;
-        show();
+        const prev = count;
+        count += linked - 1;
+        show(prev);
       } else if (count > 0) {
         breakCombo(); // 같은 색: 콤보 끊김, 이번 터뜨리기부터 새로 시작
       }

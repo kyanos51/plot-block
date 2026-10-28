@@ -224,7 +224,7 @@ export function initPop(app) {
   function pop(chain) {
     const n = chain.length;
     chain.forEach((b) => popping.add(b.block.id));
-    combo.pop(chain[0].block.slot);
+    combo.pop(chain[0].block.slot, n);
     const done = chain.filter((b) => b.block.stage === 2).length;
     const tier = done === n ? 'B' : done > 0 ? 'A' : 'base';
     const blockColor = color(chain[0].block.slot);
