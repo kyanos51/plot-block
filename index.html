@@ -20,7 +20,14 @@
     <button class="bar-btn" id="btn-edit">편집</button>
     <button class="bar-btn" id="btn-text">글</button>
     <button class="bar-btn" id="btn-pop">터뜨리기</button>
+    <button class="bar-btn" id="btn-more" aria-label="설정">⋯</button>
   </header>
+
+  <div class="backup-nag" id="backup-nag" hidden>
+    <span id="nag-text"></span>
+    <button id="nag-backup">백업</button>
+    <button id="nag-later">나중에</button>
+  </div>
 
   <main class="timeline" id="timeline"></main>
 
@@ -66,6 +73,30 @@
     </div>
     <textarea class="panel-input" id="sheet-memo" rows="4" placeholder="이 구간의 메모"></textarea>
     <div class="panel-row"><button class="panel-btn danger" id="sheet-delete">시트 삭제</button></div>
+  </div>
+
+  <div class="sheet-panel" id="settings" hidden>
+    <div class="panel-head"><b>설정</b><button id="set-done">닫기</button></div>
+    <div class="set-group">
+      <div class="set-title">백업</div>
+      <div class="panel-row">
+        <button class="panel-btn strong" id="set-backup">백업 파일 만들기</button>
+        <button class="panel-btn" id="set-restore">백업 파일로 복구</button>
+      </div>
+      <input type="file" id="set-file" accept="application/json,.json" hidden>
+      <p class="panel-hint" id="set-last"></p>
+    </div>
+    <div class="set-group">
+      <div class="set-title">화면</div>
+      <label class="set-row"><span>블록 외곽선</span><input type="checkbox" switch id="set-edge"></label>
+      <div class="set-row"><span>바깥 메모 글자</span>
+        <span class="seg"><button data-fs="11">작게</button><button data-fs="12">크게</button></span>
+      </div>
+    </div>
+    <div class="set-group">
+      <button class="panel-btn danger" id="set-reset">모든 데이터 지우기</button>
+      <p class="panel-hint" id="set-version"></p>
+    </div>
   </div>
 
   <div class="toast" id="toast"></div>

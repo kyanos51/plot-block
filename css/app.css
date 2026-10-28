@@ -356,3 +356,25 @@ textarea.panel-input { margin-top: 8px; resize: none; line-height: 1.5; }
 .panel-btn { border: 0; border-radius: 9px; padding: 7px 12px; background: rgba(0, 0, 0, 0.05); font-size: 13px; }
 .panel-btn.danger { color: var(--danger); }
 .panel-hint { margin: 8px 0 0; font-size: 11px; line-height: 1.5; color: var(--sub); }
+
+/* ---------- 설정 ---------- */
+.set-group { padding: 10px 0; border-top: 1px solid var(--line); }
+.set-group:first-of-type { border-top: 0; padding-top: 0; }
+.set-title { margin-bottom: 6px; font-size: 12px; font-weight: 700; color: var(--sub); }
+.set-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 14px; }
+.set-row input[type=checkbox] { width: 20px; height: 20px; }
+.seg { display: inline-flex; gap: 4px; }
+.seg button { border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; background: transparent; font-size: 13px; color: var(--sub); }
+.seg button.on { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 700; }
+.panel-btn.strong { background: var(--ink); color: var(--bg); font-weight: 700; }
+
+/* ---------- 백업 알림 ---------- */
+.backup-nag {
+  position: sticky; top: calc(env(safe-area-inset-top) + 50px); z-index: 9;
+  display: flex; align-items: center; gap: 8px;
+  margin: 0 16px 6px; padding: 8px 10px; border-radius: 12px;
+  background: rgba(227, 192, 126, 0.25); font-size: 12px; color: var(--ink);
+}
+.backup-nag[hidden] { display: none; }
+.backup-nag span { flex: 1; }
+.backup-nag button { border: 0; border-radius: 8px; padding: 5px 10px; background: rgba(255, 255, 255, 0.8); font-size: 12px; font-weight: 700; }

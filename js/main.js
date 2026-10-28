@@ -5,12 +5,13 @@ import { initPalette } from './palette.js';
 import { initText } from './text.js';
 import { initSheetInfo } from './sheetinfo.js';
 import { initSearch } from './search.js';
+import { initSettings } from './settings.js';
 import { loadDoc, saveDoc, clearDoc } from './store.js';
 
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r26';
+const VERSION = 'r27';
 
 // ---------- 문서 ----------
 const PRESETS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
@@ -25,6 +26,8 @@ function sampleDoc() {
     ({ id: uid('b'), slot, col, row, summary, stage, memoTitle: '', body: '' });
   return {
     version: 1,
+    settings: { edge: false, noteFs: 12 },
+    meta: {},
     slots: PRESETS.map((color) => ({ color, meaning: '' })),
     sheets: [
       { id: uid('s'), from: 1, to: 17, blocks: [b(0, 0, 1, '첫 만남', 2), b(2, 2, 1, '복선', 2)] },
@@ -155,6 +158,7 @@ function render() {
   document.body.classList.toggle('desktop', L.desk);
   document.body.classList.toggle('editing', state.editing);
   document.body.classList.toggle('texting', state.texting);
+  applySettings();
 
   const w = (L.desk ? ROWS : COLS) * L.step - L.gap;
   const h = (L.desk ? COLS : ROWS) * L.step - L.gap;
@@ -174,11 +178,9 @@ function render() {
         }).join('')}
       </div>
     </section>`).join('') + `<button class="add-sheet" id="add-sheet">+ 시트 추가</button>
-    <button class="reset-btn" id="reset">모든 데이터 지우기 (테스트용)</button>
     <p class="version">프로토타입 ${VERSION}</p>`;
 
   $('add-sheet').addEventListener('click', addSheet);
-  $('reset').addEventListener('click', resetAll);
 }
 
 // 말풍선은 블록 가장자리에 붙고, 블록 쪽으로 꼬리가 나옴. 블록 색으로 물들여 어느 블록의 메모인지 보이게 함
@@ -215,6 +217,30 @@ function noteHTML(sheet, b, cell) {
   return `<div class="note tail-${tail}" data-note="${b.id}" style="${pos};max-width:${maxW}px;--tint:${mix(c, 0.7)};--edge:${mix(c, -0.15, 0.6)}"><span>${esc(b.summary)}</span></div>`;
 }
 
+// 설정: 블록 외곽선, 바깥 메모 글자 크기
+function applySettings() {
+  const st = state.doc.settings;
+  document.body.classList.toggle('edge', !!st.edge);
+  document.documentElement.style.setProperty('--note-fs', `${st.noteFs}px`);
+}
+
+// 불러온 문서(저장소·백업 파일)를 현재 형식으로 맞춤
+function prepareDoc(doc) {
+  doc.settings = { edge: false, noteFs: 12, ...(doc.settings || {}) };
+  doc.meta = doc.meta || {};
+  // r24의 빈칸 메모 위치(notePos)를 상하좌우 방향으로 바꿈. 붙어 있지 않던 메모는 블록 안으로
+  for (const sh of doc.sheets) {
+    for (const b of sh.blocks) {
+      if (!b.notePos) continue;
+      const dir = Object.keys(DIRS).find((k) => b.col + DIRS[k][0] === b.notePos.col && b.row + DIRS[k][1] === b.notePos.row);
+      b.noteDir = dir || null;
+      delete b.notePos;
+    }
+    normalizeNotes(sh);
+  }
+  return doc;
+}
+
 function renderTray() {
   $('tray').innerHTML = `
     ${state.doc.slots.map((s, i) => `<div class="block slot" data-slot="${i}" style="--c:${s.color}"></div>`).join('')}
@@ -245,6 +271,7 @@ async function resetAll() {
   render();
   flush();
   toast('초기화했습니다');
+  return true;
 }
 
 // ---------- 토스트 ----------
@@ -626,16 +653,7 @@ async function start() {
     state.doc = sampleDoc();
     flush();
   }
-  // r24의 빈칸 메모 위치(notePos)를 상하좌우 방향으로 바꿈. 붙어 있지 않던 메모는 블록 안으로
-  for (const sh of state.doc.sheets) {
-    for (const b of sh.blocks) {
-      if (!b.notePos) continue;
-      const dir = Object.keys(DIRS).find((k) => b.col + DIRS[k][0] === b.notePos.col && b.row + DIRS[k][1] === b.notePos.row);
-      b.noteDir = dir || null;
-      delete b.notePos;
-    }
-    normalizeNotes(sh);
-  }
+  prepareDoc(state.doc);
   renderTray();
   render();
   updateUndo();
@@ -643,7 +661,9 @@ async function start() {
   const app = {
     state, color, toast, findBlock, findSheet, render, renderTray, changed, snapshot, sheetLabel, esc, uid, PRESETS,
     COLS, ROWS, DIRS, inGrid, cellToXY, xyToCell, mix, layout: () => L,
+    flush, prepareDoc, resetAll, updateUndo, VERSION,
   };
+  initSettings(app);
   initText(app);
   initSheetInfo(app);
   initSearch(app);
@@ -652,5 +672,8 @@ async function start() {
   initPalette(app);
 }
 start();
+
+// 브라우저에 데이터를 지우지 말라고 요청 (Safari는 거절할 수 있음, 그래서 백업을 함께 씀)
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
