@@ -2,12 +2,15 @@
 import { initPop } from './pop.js';
 import { initMemo } from './memo.js';
 import { initPalette } from './palette.js';
+import { initText } from './text.js';
+import { initSheetInfo } from './sheetinfo.js';
+import { initSearch } from './search.js';
 import { loadDoc, saveDoc, clearDoc } from './store.js';
 
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r23';
+const VERSION = 'r24';
 
 // ---------- 문서 ----------
 const PRESETS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
@@ -37,6 +40,7 @@ const state = {
   doc: null,
   loadFailed: false, // 읽기에 실패하면 기존 데이터를 덮어쓰지 않도록 저장을 멈춤
   editing: false,
+  texting: false, // 글(요약 메모) 편집 모드
   popOff: false,
 };
 
@@ -121,18 +125,26 @@ function render() {
   document.documentElement.style.setProperty('--cell', `${L.cell}px`);
   document.body.classList.toggle('desktop', L.desk);
   document.body.classList.toggle('editing', state.editing);
+  document.body.classList.toggle('texting', state.texting);
 
   const w = (L.desk ? ROWS : COLS) * L.step - L.gap;
   const h = (L.desk ? COLS : ROWS) * L.step - L.gap;
 
   $('timeline').innerHTML = state.doc.sheets.map((s) => `
     <section class="sheet" data-sheet="${s.id}">
-      <div class="label">${sheetLabel(s)}</div>
+      <button class="label" data-label="${s.id}">${sheetLabel(s)}${s.memo ? '<span class="label-dot" aria-label="시트 메모 있음"></span>' : ''}</button>
       <div class="grid" style="width:${w}px;height:${h}px">
         <div class="ghost"></div>
         ${s.blocks.map((b) => {
           const [x, y] = cellToXY(b.col, b.row, L);
-          return `<div class="block" data-id="${b.id}" style="--c:${color(b.slot)};left:${x}px;top:${y}px">${esc(b.summary || '')}</div>`;
+          // 요약 메모는 블록 안(기본) 또는 같은 시트의 빈칸(notePos)에 표시
+          const inside = b.notePos ? '' : esc(b.summary || '');
+          let note = '';
+          if (b.notePos && b.summary) {
+            const [nx, ny] = cellToXY(b.notePos.col, b.notePos.row, L);
+            note = `<div class="note" data-note="${b.id}" style="left:${nx}px;top:${ny}px">${esc(b.summary)}</div>`;
+          }
+          return `<div class="block" data-id="${b.id}"${b.summary ? '' : ' data-empty'} style="--c:${color(b.slot)};left:${x}px;top:${y}px">${inside}</div>${note}`;
         }).join('')}
       </div>
     </section>`).join('') + `<button class="add-sheet" id="add-sheet">+ 시트 추가</button>
@@ -395,9 +407,15 @@ function onUp() {
   if (t && t.ok) {
     snapshot();
     let id = d.id;
+    // 놓은 칸에 다른 블록의 바깥 요약 메모가 있으면 그 메모는 자기 블록 안으로 돌아감
+    for (const o of t.sheet.blocks) {
+      if (o.notePos && o.notePos.col === t.col && o.notePos.row === t.row) o.notePos = null;
+    }
     if (d.kind === 'move') {
       const found = findBlock(d.id);
       const b = found.block;
+      // 다른 시트로 옮기면 바깥 메모는 블록 안으로
+      if (found.sheet !== t.sheet) b.notePos = null;
       found.sheet.blocks = found.sheet.blocks.filter((x) => x.id !== d.id);
       b.col = t.col;
       b.row = t.row;
@@ -513,13 +531,20 @@ document.addEventListener('contextmenu', (e) => {
   if (e.target.closest('.block, .tray')) e.preventDefault();
 });
 
-$('btn-edit').addEventListener('click', () => {
-  state.editing = !state.editing;
+// 블록 편집 모드와 글 편집 모드는 동시에 켜지지 않음
+function setMode(mode) {
+  state.editing = mode === 'edit';
+  state.texting = mode === 'text';
   $('btn-edit').classList.toggle('on', state.editing);
   $('btn-edit').textContent = state.editing ? '완료' : '편집';
-  $('btn-undo').hidden = !state.editing;
+  $('btn-text').classList.toggle('on', state.texting);
+  $('btn-text').textContent = state.texting ? '완료' : '글';
+  $('btn-undo').hidden = !(state.editing || state.texting);
   document.body.classList.toggle('editing', state.editing);
-});
+  document.body.classList.toggle('texting', state.texting);
+}
+$('btn-edit').addEventListener('click', () => setMode(state.editing ? null : 'edit'));
+$('btn-text').addEventListener('click', () => setMode(state.texting ? null : 'text'));
 $('btn-undo').addEventListener('click', undo);
 
 document.addEventListener('click', (e) => {
@@ -548,7 +573,13 @@ async function start() {
   render();
   updateUndo();
 
-  const app = { state, color, toast, findBlock, render, renderTray, changed, snapshot, sheetLabel, esc, PRESETS };
+  const app = {
+    state, color, toast, findBlock, findSheet, render, renderTray, changed, snapshot, sheetLabel, esc, uid, PRESETS,
+    COLS, ROWS, cellToXY, xyToCell, layout: () => L,
+  };
+  initText(app);
+  initSheetInfo(app);
+  initSearch(app);
   const memo = initMemo(app);
   initPop({ ...app, openMemo: memo.open });
   initPalette(app);

@@ -19,7 +19,7 @@ export function initPop(app) {
 
   // ---------- 긋기 시작 ----------
   $('timeline').addEventListener('pointerdown', (e) => {
-    if (state.editing || g) return;
+    if (state.editing || state.texting || g) return;
     const el = e.target.closest('.grid .block');
     if (!el || popping.has(el.dataset.id)) return;
 

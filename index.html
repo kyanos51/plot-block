@@ -18,7 +18,7 @@
     <input class="search" placeholder="화수 검색" inputmode="numeric" id="search">
     <button class="bar-btn" id="btn-undo" hidden disabled>되돌리기</button>
     <button class="bar-btn" id="btn-edit">편집</button>
-    <button class="bar-btn" data-soon>글</button>
+    <button class="bar-btn" id="btn-text">글</button>
     <button class="bar-btn" id="btn-pop">터뜨리기</button>
   </header>
 
@@ -45,6 +45,28 @@
     </header>
     <div class="memo-list" id="memo-list"></div>
   </section>
+
+  <div class="sheet-panel" id="text-editor" hidden>
+    <div class="panel-head"><b>요약 메모</b><button id="text-done">완료</button></div>
+    <input class="panel-input" id="text-input" maxlength="24" placeholder="짧은 제목 (예: 첫 만남)" enterkeyhint="done">
+    <div class="panel-row">
+      <button class="panel-btn" id="text-clear">지우기</button>
+      <button class="panel-btn" id="text-inside" hidden>블록 안으로</button>
+    </div>
+    <p class="panel-hint">글 모드에서 메모를 끌어 같은 시트의 빈칸으로 옮기거나, 자기 블록 위에 놓아 안으로 되돌릴 수 있습니다.</p>
+  </div>
+
+  <div class="sheet-panel" id="sheet-info" hidden>
+    <div class="panel-head"><b>시트 정보</b><button id="sheet-done">완료</button></div>
+    <div class="panel-row range">
+      <input class="panel-input" id="sheet-from" type="number" inputmode="numeric" min="1" placeholder="시작">
+      <span>~</span>
+      <input class="panel-input" id="sheet-to" type="number" inputmode="numeric" min="1" placeholder="끝 (비우면 한 화)">
+      <span>화</span>
+    </div>
+    <textarea class="panel-input" id="sheet-memo" rows="4" placeholder="이 구간의 메모"></textarea>
+    <div class="panel-row"><button class="panel-btn danger" id="sheet-delete">시트 삭제</button></div>
+  </div>
 
   <div class="toast" id="toast"></div>
 
