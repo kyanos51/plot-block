@@ -209,6 +209,12 @@ body.desktop .add-sheet { flex: none; width: 120px; margin: 0 0 0 14px; align-se
   color: transparent; -webkit-text-stroke: 6px rgba(138, 102, 80, 0.55); /* 바깥으로 3px */
 }
 .combo-label::before { -webkit-text-stroke-width: 4px; }
+/* 터뜨린 블록 수: 콤보보다 작게, 연출에 쓰는 남색을 옅게 */
+.combo-blocks {
+  margin-top: 4px; font-size: 0.8em; font-weight: 700; letter-spacing: 1px;
+  color: rgba(58, 70, 112, 0.72);
+  text-shadow: 0 1px 0 rgba(255, 252, 244, 0.9);
+}
 
 /* ---------- 테스트용 초기화 ---------- */
 .reset-btn {

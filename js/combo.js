@@ -6,9 +6,11 @@ const REST_MS = 1000;
 export function createCombo(fx) {
   const el = document.getElementById('combo');
   const num = el.querySelector('.combo-num');
+  const blocksEl = el.querySelector('.combo-blocks');
   let alive = false;   // 직전 터뜨리기 이후 1초가 아직 안 지남
   let lastSlot = null;
   let count = 0;
+  let blocks = 0;      // 이번 콤보 동안 터뜨린 블록 수 (시작 터뜨리기 포함)
   let restTimer = null;
   let hiding = false;  // 사라지는 중에 새 콤보가 오면 처음부터 다시 등장
 
@@ -23,6 +25,7 @@ export function createCombo(fx) {
     lastSlot = null;
     if (count > 0) hide();
     count = 0;
+    blocks = 0;
   }
 
   function show(prev) {
@@ -34,6 +37,7 @@ export function createCombo(fx) {
     el.hidden = false;
     // 콤보가 높을수록 글자가 조금씩 커짐
     el.style.setProperty('--grow', 1 + Math.min(count, 10) * 0.05);
+    blocksEl.textContent = `${blocks} Block`;
 
     if (first) {
       num.textContent = num.dataset.text = count;
@@ -66,6 +70,8 @@ export function createCombo(fx) {
         { transform: 'translate(-50%, -50%) scale(0.96, 1.04)', offset: 0.6 },
         { transform: 'translate(-50%, -50%) scale(1)' },
       ], { duration: 360, easing: 'ease-out', composite: 'replace' });
+      blocksEl.animate([{ transform: 'scale(1.25)' }, { transform: 'scale(0.95)', offset: 0.6 }, { transform: 'scale(1)' }],
+        { duration: 300, delay: 60, easing: 'ease-out' });
     }
 
     const r = num.getBoundingClientRect();
@@ -111,14 +117,16 @@ export function createCombo(fx) {
     swipeEnd() {
       if (alive) rest();
     },
-    // 연결 개수 - 1 만큼 콤보가 오름 (2개 → +1, 3개 → +2, 5개 → +4)
+    // linked: 이번에 터뜨린 블록 수 (콤보 숫자는 터뜨릴 때마다 1씩, 블록 수는 따로 누적)
     pop(slot, linked) {
       if (alive && slot !== lastSlot) {
         const prev = count;
-        count += linked - 1;
+        count++;
+        blocks += linked;
         show(prev);
-      } else if (count > 0) {
-        breakCombo(); // 같은 색: 콤보 끊김, 이번 터뜨리기부터 새로 시작
+      } else {
+        if (count > 0) breakCombo(); // 같은 색: 콤보 끊김, 이번 터뜨리기부터 새로 시작
+        blocks = linked;
       }
       alive = true;
       lastSlot = slot;
