@@ -1,6 +1,6 @@
 // 플롯 블록: 타임라인 시트, 블록 쌓기, 저장
 import { initPop } from './pop.js';
-import { initMemo } from './memo.js';
+import { initMemo, extractTags, addTags } from './memo.js';
 import { initPalette } from './palette.js';
 import { initText } from './text.js';
 import { initSheetInfo } from './sheetinfo.js';
@@ -11,7 +11,7 @@ import { loadDoc, saveDoc, clearDoc } from './store.js';
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r28';
+const VERSION = 'r29';
 
 // ---------- 문서 ----------
 const PRESETS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
@@ -231,6 +231,15 @@ function prepareDoc(doc) {
   // r24의 빈칸 메모 위치(notePos)를 상하좌우 방향으로 바꿈. 붙어 있지 않던 메모는 블록 안으로
   for (const sh of doc.sheets) {
     for (const b of sh.blocks) {
+      // r28까지 본문에 쓰던 #태그는 태그란으로 옮김
+      if (!Array.isArray(b.tags)) b.tags = [];
+      if (b.body && b.body.includes('#')) {
+        const { names, rest } = extractTags(b.body);
+        if (names.length) {
+          b.body = rest;
+          addTags(b, names);
+        }
+      }
       if (!b.notePos) continue;
       const dir = Object.keys(DIRS).find((k) => b.col + DIRS[k][0] === b.notePos.col && b.row + DIRS[k][1] === b.notePos.row);
       b.noteDir = dir || null;

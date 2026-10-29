@@ -1,6 +1,29 @@
 // 세부 메모 화면: 같은 색 블록의 메모를 시트 배치 순서대로 세로로 나열
-// 본문에 #제목을 쓰면 그 제목의 메모(다른 색 포함)로 바로 가는 태그 버튼이 생김
+// 태그란에 #제목을 넣으면 그 제목의 메모(다른 색 포함)로 바로 가는 태그 버튼이 생김.
+// 본문에 #제목을 써도 입력을 마치면 태그란으로 옮겨지고 본문에서는 사라짐
 const STAGES = ['설계', '검토', '완성'];
+
+export const normTag = (t) => String(t || '').replace(/\s+/g, '').toLowerCase();
+
+// 글에서 #이름을 빼냄 (# 다음 공백 전까지, 끝의 문장부호는 뺌). 태그만 있던 줄은 지움
+export function extractTags(text) {
+  const names = [];
+  const lines = String(text || '').split('\n').map((line) => {
+    if (!line.includes('#')) return line;
+    const rest = line.replace(/#([^\s#]+)/g, (m, raw) => {
+      const name = raw.replace(/[.,!?;:)\]'"]+$/, '');
+      if (name) names.push(name);
+      return '';
+    }).replace(/\s{2,}/g, ' ').trim();
+    return rest || null;
+  }).filter((line) => line !== null);
+  return { names, rest: lines.join('\n') };
+}
+
+export function addTags(block, names) {
+  block.tags = block.tags || [];
+  for (const n of names) if (!block.tags.some((t) => normTag(t) === normTag(n))) block.tags.push(n);
+}
 
 export function initMemo(app) {
   const { state, color, findBlock, changed, sheetLabel, esc, toast, mix } = app;
@@ -23,17 +46,7 @@ export function initMemo(app) {
   }
 
   // ---------- 태그 ----------
-  const norm = (t) => String(t || '').replace(/\s+/g, '').toLowerCase();
-
-  // 본문에서 #이름을 찾음 (# 다음 공백 전까지, 끝의 문장부호는 뺌)
-  function parseTags(body) {
-    const names = [];
-    for (const m of String(body || '').matchAll(/#([^\s#]+)/g)) {
-      const name = m[1].replace(/[.,!?;:)\]'"]+$/, '');
-      if (name && !names.some((n) => norm(n) === norm(name))) names.push(name);
-    }
-    return names;
-  }
+  const norm = normTag;
 
   // 제목이 같은 메모를 찾고, 없으면 요약 메모가 같은 블록 (띄어쓰기·대소문자 무시, 자기 자신 제외)
   function resolve(name, selfId) {
@@ -43,21 +56,47 @@ export function initMemo(app) {
       || all.find(({ block }) => block.id !== selfId && norm(block.summary) === key);
   }
 
+  // 태그 버튼: 이름을 누르면 이동, ×를 누르면 태그 삭제
   function tagsHTML(block) {
-    return parseTags(block.body).map((name) => {
+    return (block.tags || []).map((name, i) => {
       const hit = resolve(name, block.id);
-      if (!hit) return `<span class="memo-tag none">#${esc(name)}</span>`;
+      const x = `<button class="memo-tag-x" data-untag="${i}" aria-label="태그 지우기">×</button>`;
+      if (!hit) return `<span class="memo-tag none"><span class="memo-tag-go">#${esc(name)}</span>${x}</span>`;
       const c = color(hit.block.slot);
-      return `<button class="memo-tag" data-go="${hit.block.id}" style="--tint:${mix(c, 0.7)};--edge:${mix(c, -0.15, 0.6)}">
-        #${esc(name)}<small>${sheetLabel(hit.sheet)}</small></button>`;
+      return `<span class="memo-tag" style="--tint:${mix(c, 0.7)};--edge:${mix(c, -0.15, 0.6)}">
+        <button class="memo-tag-go" data-go="${hit.block.id}">#${esc(name)}<small>${sheetLabel(hit.sheet)}</small></button>${x}</span>`;
     }).join('');
   }
 
   function refreshTags() {
     list.querySelectorAll('.memo-card').forEach((el) => {
       const { block } = findBlock(el.dataset.id);
-      el.querySelector('.memo-tags').innerHTML = tagsHTML(block);
+      el.querySelector('.memo-tag-list').innerHTML = tagsHTML(block);
     });
+  }
+
+  // 태그란 입력 확정: #은 있어도 없어도 됨. 쉼표나 #으로 여러 개 (제목의 띄어쓰기는 그대로 둠)
+  function commitTagInput(input) {
+    const names = input.value.split(/[,#]+/).map((t) => t.trim()).filter(Boolean);
+    input.value = '';
+    if (!names.length) return;
+    const { block } = findBlock(input.closest('[data-id]').dataset.id);
+    addTags(block, names);
+    refreshTags();
+    changed();
+  }
+
+  // 본문에 쓴 #태그는 입력을 마치면 태그란으로 옮김
+  function moveBodyTags(ta) {
+    const { names, rest } = extractTags(ta.value);
+    if (!names.length) return;
+    const { block } = findBlock(ta.closest('[data-id]').dataset.id);
+    block.body = rest;
+    ta.value = rest;
+    grow(ta);
+    addTags(block, names);
+    refreshTags();
+    changed();
   }
   let tagTimer = null;
   const refreshSoon = () => {
@@ -73,8 +112,11 @@ export function initMemo(app) {
           ${block.summary ? `<span class="memo-sum">${esc(block.summary)}</span>` : ''}
         </div>
         <input class="memo-title" placeholder="제목" value="${esc(block.memoTitle || '')}">
-        <textarea class="memo-body" placeholder="메모 (다른 메모로 이어지게 하려면 #제목)" rows="3">${esc(block.body || '')}</textarea>
-        <div class="memo-tags">${tagsHTML(block)}</div>
+        <textarea class="memo-body" placeholder="메모" rows="3">${esc(block.body || '')}</textarea>
+        <div class="memo-tags">
+          <div class="memo-tag-list">${tagsHTML(block)}</div>
+          <input class="memo-tag-input" placeholder="#태그 (다른 메모의 제목)" enterkeyhint="done">
+        </div>
         <div class="memo-stage">
           ${STAGES.map((t, i) => `<button data-stage="${i}" class="${(block.stage || 0) === i ? 'on' : ''}">${t}</button>`).join('')}
         </div>
@@ -165,6 +207,10 @@ export function initMemo(app) {
   list.addEventListener('input', (e) => {
     const el = e.target.closest('[data-id]');
     if (!el) return;
+    if (e.target.classList.contains('memo-tag-input')) {
+      if (/,$/.test(e.target.value)) commitTagInput(e.target);
+      return;
+    }
     const { block } = findBlock(el.dataset.id);
     if (e.target.classList.contains('memo-title')) block.memoTitle = e.target.value;
     if (e.target.classList.contains('memo-body')) {
@@ -175,9 +221,28 @@ export function initMemo(app) {
     changed();
   });
 
+  list.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.classList.contains('memo-tag-input')) {
+      e.preventDefault();
+      commitTagInput(e.target);
+    }
+  });
+  list.addEventListener('focusout', (e) => {
+    if (e.target.classList.contains('memo-tag-input')) commitTagInput(e.target);
+    if (e.target.classList.contains('memo-body')) moveBodyTags(e.target);
+  });
+
   list.addEventListener('click', (e) => {
     const tag = e.target.closest('[data-go]');
     if (tag) return go(tag.closest('[data-id]').dataset.id, tag.dataset.go);
+    const x = e.target.closest('[data-untag]');
+    if (x) {
+      const { block } = findBlock(x.closest('[data-id]').dataset.id);
+      block.tags.splice(Number(x.dataset.untag), 1);
+      refreshTags();
+      changed();
+      return;
+    }
     const btn = e.target.closest('.memo-stage button');
     if (!btn) return;
     const el = btn.closest('[data-id]');
@@ -197,7 +262,8 @@ export function initMemo(app) {
   $('memo-copy').addEventListener('click', async () => {
     const text = ordered(slot).map(({ sheet, block }) => {
       const head = `[${sheetLabel(sheet)}] ${block.memoTitle || ''}`.trim();
-      return block.body ? `${head}\n${block.body}` : head;
+      const tags = (block.tags || []).length ? `\n${block.tags.map((t) => `#${t}`).join(' ')}` : '';
+      return (block.body ? `${head}\n${block.body}` : head) + tags;
     }).join('\n\n');
     try {
       await navigator.clipboard.writeText(text);

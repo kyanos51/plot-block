@@ -380,12 +380,26 @@ textarea.panel-input { margin-top: 8px; resize: none; line-height: 1.5; }
 .backup-nag button { border: 0; border-radius: 8px; padding: 5px 10px; background: rgba(255, 255, 255, 0.8); font-size: 12px; font-weight: 700; }
 
 /* ---------- 세부 메모 태그 ---------- */
-.memo-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.memo-tags:not(:empty) { margin-top: 6px; }
+.memo-tags { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--line); }
+.memo-tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.memo-tag-list:not(:empty) { margin-bottom: 6px; }
 .memo-tag {
-  display: inline-flex; align-items: baseline; gap: 5px;
-  padding: 4px 10px; border-radius: 12px; border: 1.5px solid var(--edge, var(--line));
-  background: var(--tint, transparent); font: inherit; font-size: 13px; font-weight: 600; color: var(--ink);
+  display: inline-flex; align-items: center;
+  border-radius: 12px; border: 1.5px solid var(--edge, var(--line)); background: var(--tint, transparent);
 }
-.memo-tag small { font-size: 11px; font-weight: 500; color: var(--sub); }
-.memo-tag.none { border-style: dashed; color: var(--sub); font-weight: 500; }
+.memo-tag-go {
+  display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 4px 4px 10px;
+  border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink);
+}
+.memo-tag-go small { font-size: 11px; font-weight: 500; color: var(--sub); }
+.memo-tag-x {
+  padding: 2px 9px 2px 4px; border: 0; background: transparent;
+  font-size: 15px; line-height: 1; color: var(--sub);
+}
+.memo-tag.none { border-style: dashed; }
+.memo-tag.none .memo-tag-go { color: var(--sub); font-weight: 500; }
+.memo-tag-input {
+  display: block; width: 100%; border: 0; background: transparent; padding: 4px 0;
+  font: inherit; font-size: 16px; color: var(--ink);
+}
+.memo-tag-input:focus { outline: none; }
