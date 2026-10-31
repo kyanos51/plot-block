@@ -86,6 +86,72 @@ export function initMemo(app) {
     changed();
   }
 
+  // ---------- 태그 추천 ----------
+  // 첫 글자만 써도 맞도록 한글 초성으로도 비교 (예: 'ㄷ' → '다시 만난 날')
+  const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+  const choOf = (ch) => {
+    const code = ch.charCodeAt(0) - 0xac00;
+    return code >= 0 && code < 11172 ? CHO[Math.floor(code / 588)] : ch;
+  };
+  // 쓰는 중인 글자(마지막 글자)는 초성만 맞아도 되게: '다ㅅ', '다시' 모두 '다시 만난 날'에 맞음
+  function matches(title, query) {
+    const t = [...norm(title)];
+    const q = [...norm(query)];
+    for (let i = 0; i + q.length <= t.length; i++) {
+      if (q.every((c, k) => c === t[i + k] || (CHO.includes(c) && c === choOf(t[i + k])))) return true;
+    }
+    return false;
+  }
+
+  const MAX_SUGGEST = 5;
+  // 지금 쓰는 태그 (쉼표·# 뒤의 마지막 부분)
+  const currentQuery = (input) => input.value.split(/[,#]/).pop().trim();
+
+  function suggestions(input) {
+    const q = currentQuery(input);
+    if (!q) return [];
+    const self = findBlock(input.closest('[data-id]').dataset.id).block;
+    const taken = new Set((self.tags || []).map(norm));
+    const out = [];
+    const seen = new Set();
+    // 앞 시트부터, 시트 안에서는 위→아래, 왼쪽→오른쪽
+    for (const sheet of state.doc.sheets) {
+      for (const block of [...sheet.blocks].sort((a, b) => a.row - b.row || a.col - b.col)) {
+        const name = block.memoTitle || block.summary;
+        if (block === self || !name || seen.has(norm(name)) || taken.has(norm(name)) || !matches(name, q)) continue;
+        seen.add(norm(name));
+        out.push({ name, sheet, block });
+        if (out.length >= MAX_SUGGEST) return out;
+      }
+    }
+    return out;
+  }
+
+  function showSuggest(input) {
+    const box = input.parentElement.querySelector('.tag-suggest');
+    const items = suggestions(input);
+    box.hidden = !items.length;
+    box.innerHTML = items.map(({ name, sheet, block }) => `
+      <button class="tag-suggest-item" data-pick="${esc(name)}">
+        <span class="tag-dot" style="background:${color(block.slot)}"></span>
+        <span class="tag-suggest-name">${esc(name)}</span><small>${sheetLabel(sheet)}</small>
+      </button>`).join('');
+  }
+
+  function hideSuggest(input) {
+    const box = input && input.parentElement.querySelector('.tag-suggest');
+    if (box) box.hidden = true;
+  }
+
+  // 추천 제목을 고르면 쓰던 부분을 그 제목으로 바꿔 바로 태그로 만듦
+  function pick(input, name) {
+    const parts = input.value.split(/([,#])/);
+    parts[parts.length - 1] = name;
+    input.value = parts.join('');
+    commitTagInput(input);
+    hideSuggest(input);
+  }
+
   // 본문에 쓴 #태그는 입력을 마치면 태그란으로 옮김
   function moveBodyTags(ta) {
     const { names, rest } = extractTags(ta.value);
@@ -115,7 +181,8 @@ export function initMemo(app) {
         <textarea class="memo-body" placeholder="메모" rows="3">${esc(block.body || '')}</textarea>
         <div class="memo-tags">
           <div class="memo-tag-list">${tagsHTML(block)}</div>
-          <input class="memo-tag-input" placeholder="#태그 (다른 메모의 제목)" enterkeyhint="done">
+          <input class="memo-tag-input" placeholder="#태그 (다른 메모의 제목)" enterkeyhint="done" autocomplete="off">
+          <div class="tag-suggest" hidden></div>
         </div>
         <div class="memo-stage">
           ${STAGES.map((t, i) => `<button data-stage="${i}" class="${(block.stage || 0) === i ? 'on' : ''}">${t}</button>`).join('')}
@@ -209,6 +276,7 @@ export function initMemo(app) {
     if (!el) return;
     if (e.target.classList.contains('memo-tag-input')) {
       if (/,$/.test(e.target.value)) commitTagInput(e.target);
+      showSuggest(e.target);
       return;
     }
     const { block } = findBlock(el.dataset.id);
@@ -225,14 +293,24 @@ export function initMemo(app) {
     if (e.key === 'Enter' && e.target.classList.contains('memo-tag-input')) {
       e.preventDefault();
       commitTagInput(e.target);
+      hideSuggest(e.target);
     }
   });
+  // 추천 목록을 누를 때 입력칸이 먼저 닫히지 않도록 (닫히면 쓰던 글자가 그대로 태그가 됨)
+  list.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('[data-pick]')) e.preventDefault();
+  });
   list.addEventListener('focusout', (e) => {
-    if (e.target.classList.contains('memo-tag-input')) commitTagInput(e.target);
+    if (e.target.classList.contains('memo-tag-input')) {
+      commitTagInput(e.target);
+      hideSuggest(e.target);
+    }
     if (e.target.classList.contains('memo-body')) moveBodyTags(e.target);
   });
 
   list.addEventListener('click', (e) => {
+    const p = e.target.closest('[data-pick]');
+    if (p) return pick(p.closest('.memo-tags').querySelector('.memo-tag-input'), p.dataset.pick);
     const tag = e.target.closest('[data-go]');
     if (tag) return go(tag.closest('[data-id]').dataset.id, tag.dataset.go);
     const x = e.target.closest('[data-untag]');

@@ -403,3 +403,21 @@ textarea.panel-input { margin-top: 8px; resize: none; line-height: 1.5; }
   font: inherit; font-size: 16px; color: var(--ink);
 }
 .memo-tag-input:focus { outline: none; }
+
+/* 태그 추천: 태그란 아래에 최대 5개 */
+.memo-tags { position: relative; }
+.tag-suggest {
+  margin-top: 4px; border-radius: 12px; overflow: hidden;
+  background: #fff; box-shadow: 0 6px 18px rgba(60, 50, 30, 0.14);
+}
+.tag-suggest[hidden] { display: none; }
+.tag-suggest-item {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 10px 12px; border: 0; border-top: 1px solid var(--line); background: transparent;
+  font: inherit; font-size: 14px; color: var(--ink); text-align: left;
+}
+.tag-suggest-item:first-child { border-top: 0; }
+.tag-suggest-item:active { background: rgba(0, 0, 0, 0.04); }
+.tag-dot { flex: none; width: 10px; height: 10px; border-radius: 3px; }
+.tag-suggest-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag-suggest-item small { flex: none; font-size: 11px; color: var(--sub); }
