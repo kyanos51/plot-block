@@ -11,7 +11,7 @@ import { loadDoc, saveDoc, clearDoc } from './store.js';
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r30';
+const VERSION = 'r31';
 
 // ---------- 문서 ----------
 const PRESETS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
@@ -48,8 +48,18 @@ const state = {
 };
 
 // ---------- 자동 저장 ----------
+// 저장소(IndexedDB) 쓰기는 0.3초 모아서 하고, 그 사이 앱이 닫혀도 잃지 않도록
+// 바뀔 때마다 임시 기록(localStorage)에 바로 남김. 저장소에 쓰고 나면 임시 기록은 지움
+const JOURNAL = 'plot-block-journal';
 let saveTimer = null;
+let journalAt = 0;
 function changed() {
+  if (!state.loadFailed) {
+    journalAt = Date.now();
+    try {
+      localStorage.setItem(JOURNAL, JSON.stringify({ at: journalAt, doc: state.doc }));
+    } catch { /* 임시 기록을 못 남겨도 아래 저장은 그대로 진행 */ }
+  }
   clearTimeout(saveTimer);
   saveTimer = setTimeout(flush, 300);
 }
@@ -57,11 +67,30 @@ function flush() {
   clearTimeout(saveTimer);
   saveTimer = null;
   if (state.loadFailed) return toast('저장소를 읽지 못해 저장하지 않습니다. 앱을 다시 열어 주세요');
-  saveDoc(state.doc).catch(() => toast('저장에 실패했습니다'));
+  const at = journalAt;
+  saveDoc(state.doc)
+    .then(() => {
+      try {
+        const j = JSON.parse(localStorage.getItem(JOURNAL) || 'null');
+        if (j && j.at <= at) localStorage.removeItem(JOURNAL);
+      } catch { /* 지우지 못하면 다음 실행 때 같은 내용으로 다시 저장됨 */ }
+    })
+    .catch(() => toast('저장에 실패했습니다'));
 }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden' && saveTimer) flush();
 });
+window.addEventListener('pagehide', () => { if (saveTimer) flush(); });
+
+// 저장소에 쓰기 전에 앱이 닫혔다면 임시 기록이 더 최신
+function readJournal() {
+  try {
+    const j = JSON.parse(localStorage.getItem(JOURNAL) || 'null');
+    return j && j.doc && Array.isArray(j.doc.sheets) ? j.doc : null;
+  } catch {
+    return null;
+  }
+}
 
 // ---------- 되돌리기: 변경 직전 상태를 최대 20개 보관 (앱을 닫으면 사라짐) ----------
 const history = [];
@@ -272,6 +301,7 @@ function addSheet() {
 async function resetAll() {
   if (!confirm('모든 시트와 메모를 지우고 처음 예시로 되돌립니다. 계속할까요?')) return;
   await clearDoc();
+  try { localStorage.removeItem(JOURNAL); } catch { /* 없어도 됨 */ }
   state.doc = sampleDoc();
   state.loadFailed = false;
   history.length = 0;
@@ -657,6 +687,11 @@ async function start() {
   } catch {
     state.loadFailed = true;
     toast('저장된 데이터를 읽지 못했습니다');
+  }
+  const pending = state.loadFailed ? null : readJournal();
+  if (pending) {
+    state.doc = pending;
+    flush();
   }
   if (!state.doc) {
     state.doc = sampleDoc();

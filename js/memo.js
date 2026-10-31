@@ -136,6 +136,8 @@ export function initMemo(app) {
         <span class="tag-dot" style="background:${color(block.slot)}"></span>
         <span class="tag-suggest-name">${esc(name)}</span><small>${sheetLabel(sheet)}</small>
       </button>`).join('');
+    // 키보드에 가리지 않도록 추천 목록이 보이게 스크롤
+    if (items.length) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }
 
   function hideSuggest(input) {
