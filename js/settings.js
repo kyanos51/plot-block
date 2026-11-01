@@ -21,7 +21,7 @@ export function initSettings(app) {
     panel.querySelectorAll('[data-fs]').forEach((b) => b.classList.toggle('on', Number(b.dataset.fs) === st.noteFs));
     const at = state.doc.meta.lastBackupAt;
     $('set-last').textContent = at ? `마지막 백업: ${fmt(new Date(at))}` : '아직 백업한 적이 없습니다';
-    $('set-version').textContent = `프로토타입 ${VERSION}`;
+    $('set-version').textContent = `플롯 블록 ${VERSION}`;
   }
 
   $('btn-more').addEventListener('click', () => (panel.hidden ? open() : close()));

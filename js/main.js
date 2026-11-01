@@ -1,4 +1,4 @@
-// 플롯 블록: 타임라인 시트, 블록 쌓기, 저장
+// 플롯 블록 v1.0: 타임라인 시트, 블록 쌓기, 저장
 import { initPop } from './pop.js';
 import { initMemo, extractTags, addTags } from './memo.js';
 import { initPalette } from './palette.js';
@@ -11,7 +11,7 @@ import { loadDoc, saveDoc, clearDoc } from './store.js';
 const $ = (id) => document.getElementById(id);
 
 // 화면 맨 아래에 표시. 수정을 올릴 때마다 올려서 반영 여부를 확인
-const VERSION = 'r31';
+const VERSION = 'v1.0';
 
 // ---------- 문서 ----------
 const PRESETS = ['#F2CCC3', '#C79C90', '#C0D4EE', '#F6DCAE'];
@@ -207,7 +207,7 @@ function render() {
         }).join('')}
       </div>
     </section>`).join('') + `<button class="add-sheet" id="add-sheet">+ 시트 추가</button>
-    <p class="version">프로토타입 ${VERSION}</p>`;
+    <p class="version">플롯 블록 ${VERSION}</p>`;
 
   $('add-sheet').addEventListener('click', addSheet);
 }
